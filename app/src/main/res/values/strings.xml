@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Happy Box</string>
+    <string name="slogan">Envolturas, detalles y globos</string>
+    <string name="detalles">Detalles</string>
+    <string name="globos">Globos</string>
+    <string name="peluches">Peluches</string>
+</resources>
