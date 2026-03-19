@@ -38,8 +38,14 @@ fun AppNavigation() {
 
     when (screen) {
         "inicio" -> InicioScreen { screen = "menu" }
-        "menu" -> MenuScreen { screen = "detalles" }
+        "menu" -> MenuScreen(
+            onDetalles = { screen = "detalles" },
+            onGlobos = { screen = "globos" },
+            onPeluches = { screen = "peluches" }
+        )
         "detalles" -> DetallesScreen()
+        "globos" -> GlobosScreen()
+        "peluches" -> PeluchesScreen()
     }
 }
 
@@ -75,7 +81,11 @@ fun InicioScreen(onEntrar: () -> Unit) {
 }
 
 @Composable
-fun MenuScreen(onDetalles: () -> Unit) {
+fun MenuScreen(
+    onDetalles: () -> Unit,
+    onGlobos: () -> Unit,
+    onPeluches: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -92,18 +102,17 @@ fun MenuScreen(onDetalles: () -> Unit) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Button(onClick = { }) {
+        Button(onClick = onGlobos) {
             Text("Globos")
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Button(onClick = { }) {
+        Button(onClick = onPeluches) {
             Text("Peluches")
         }
     }
 }
-
 data class Producto(
     val nombre: String,
     val precio: String,
@@ -126,6 +135,56 @@ fun DetallesScreen() {
     ) {
 
         Text("Detalles", fontSize = 24.sp)
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        LazyColumn {
+            items(productos) { producto ->
+                ProductoItem(producto)
+            }
+        }
+    }
+}
+@Composable
+fun GlobosScreen() {
+
+    val productos = listOf(
+        Producto("Globo cumpleaños", "$150", R.drawable.globo1),
+        Producto("Globo sorpresa", "$200", R.drawable.globo2)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text("Globos", fontSize = 24.sp)
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        LazyColumn {
+            items(productos) { producto ->
+                ProductoItem(producto)
+            }
+        }
+    }
+}
+@Composable
+fun PeluchesScreen() {
+
+    val productos = listOf(
+        Producto("Oso de peluche", "$300", R.drawable.peluche1),
+        Producto("Peluche corazón", "$250", R.drawable.peluche2)
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text("Peluches", fontSize = 24.sp)
 
         Spacer(modifier = Modifier.height(10.dp))
 
