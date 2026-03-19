@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mx.edu.proyecto.happybox.ui.theme.HappyboxTheme
+import androidx.activity.compose.BackHandler
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,15 +38,44 @@ fun AppNavigation() {
     var screen by remember { mutableStateOf("inicio") }
 
     when (screen) {
-        "inicio" -> InicioScreen { screen = "menu" }
-        "menu" -> MenuScreen(
-            onDetalles = { screen = "detalles" },
-            onGlobos = { screen = "globos" },
-            onPeluches = { screen = "peluches" }
-        )
-        "detalles" -> DetallesScreen()
-        "globos" -> GlobosScreen()
-        "peluches" -> PeluchesScreen()
+
+        "inicio" -> InicioScreen {
+            screen = "menu"
+        }
+
+        "menu" -> {
+            BackHandler {
+                // si estás en menú y le das atrás → regresa a inicio
+                screen = "inicio"
+            }
+
+            MenuScreen(
+                onDetalles = { screen = "detalles" },
+                onGlobos = { screen = "globos" },
+                onPeluches = { screen = "peluches" }
+            )
+        }
+
+        "detalles" -> {
+            BackHandler {
+                screen = "menu"
+            }
+            DetallesScreen()
+        }
+
+        "globos" -> {
+            BackHandler {
+                screen = "menu"
+            }
+            GlobosScreen()
+        }
+
+        "peluches" -> {
+            BackHandler {
+                screen = "menu"
+            }
+            PeluchesScreen()
+        }
     }
 }
 
