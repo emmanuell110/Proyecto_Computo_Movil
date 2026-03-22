@@ -1,7 +1,32 @@
 <resources>
     <string name="app_name">Happy Box</string>
-    <string name="slogan">Envolturas, detalles y globos</string>
+    <string name="slogan">Envolturas, detalles y globos para momentos especiales</string>
+
+    <string name="entrar">Entrar</string>
+    <string name="crear_cuenta">Crear cuenta</string>
+    <string name="iniciar_sesion">Iniciar Sesión</string>
+    <string name="correo_telefono">Correo o Teléfono</string>
+    <string name="contrasena">Contraseña</string>
+    <string name="registrarse">Registrarse</string>
+    <string name="categorias">Categorías</string>
+    <string name="carrito">Carrito</string>
+    <string name="perfil">Perfil</string>
+    <string name="vaciar_carrito">Vaciar carrito</string>
+    <string name="volver">Volver</string>
+    <string name="seleccionar_direccion">Seleccionar dirección</string>
+    <string name="agregar">Agregar</string>
+    <string name="agregado_carrito">Producto agregado al carrito</string>
+
     <string name="detalles">Detalles</string>
     <string name="globos">Globos</string>
     <string name="peluches">Peluches</string>
+    <string name="regalos">Regalos</string>
+    <string name="tazas">Tazas</string>
+
+    <string name="nombre">Nombre</string>
+    <string name="apellidos">Apellidos</string>
+    <string name="edad">Edad</string>
+    <string name="direccion">Dirección</string>
+    <string name="telefono">Teléfono</string>
+    <string name="correo">Correo</string>
 </resources>

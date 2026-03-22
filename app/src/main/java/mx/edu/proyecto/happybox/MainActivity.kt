@@ -23,6 +23,7 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.ui.platform.LocalContext
 import android.content.Context
+import android.view.Menu
 import androidx.compose.foundation.shape.CircleShape
 import org.json.JSONArray
 import org.json.JSONObject
@@ -30,6 +31,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.draw.scale
+import android.widget.Toast
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 
 
 // 🔥 carrito global
@@ -95,7 +102,8 @@ fun AppNavigation() {
                         onGlobos = { screen = "globos" },
                         onPeluches = { screen = "peluches" },
                         onCarrito = { screen = "carrito" },
-                        onPerfil = { screen = "perfil" }
+                        onPerfil = { screen = "perfil" },
+                        onMenu = { screen = "menu" }
                     )
                 }
 
@@ -120,7 +128,7 @@ fun AppNavigation() {
                 }
 
                 "perfil" -> {
-                    BackHandler { screen = "menu" }
+                    BackHandler { screen = "perfil" }
                     PerfilScreen()
                 }
             }
@@ -129,8 +137,8 @@ fun AppNavigation() {
         // 🔻 🔥 BOTTOM BAR GLOBAL
         if (screen != "inicio" && screen != "login" && screen != "registro") {
             BottomBar(
-                onMenu = { screen = "menu" },
-                onPerfil = { screen = "perfil" }
+                onCarrito = { screen = "carrito" },
+                onMenu = { screen = "menu" }
             )
         }
     }
@@ -197,19 +205,39 @@ fun LoginScreen(onLogin: () -> Unit, onRegistro: () -> Unit) {
 // 📝 REGISTRO
 @Composable
 fun RegisterScreen(onBack: () -> Unit) {
+    var nombre by remember { mutableStateOf("") }
+    var apellidos by remember { mutableStateOf("") }
+    var edad by remember { mutableStateOf("") }
+    var direccion by remember { mutableStateOf("") }
+    var telefono by remember { mutableStateOf("") }
+    var correo by remember { mutableStateOf("") }
+    var contrasena by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
-        verticalArrangement = Arrangement.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Text("Crear cuenta", fontSize = 24.sp)
 
-        Text("Crear cuenta", fontSize = 22.sp)
+        Spacer(modifier = Modifier.height(12.dp))
 
-        listOf("Nombre","Apellidos","Edad","Dirección","Teléfono","Correo","Contraseña").forEach {
-            OutlinedTextField(value = "", onValueChange = {}, label = { Text(it) })
-        }
+        OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre") })
+        OutlinedTextField(value = apellidos, onValueChange = { apellidos = it }, label = { Text("Apellidos") })
+        OutlinedTextField(value = edad, onValueChange = { edad = it }, label = { Text("Edad") })
+        OutlinedTextField(value = direccion, onValueChange = { direccion = it }, label = { Text("Dirección") })
+        OutlinedTextField(value = telefono, onValueChange = { telefono = it }, label = { Text("Teléfono") })
+        OutlinedTextField(value = correo, onValueChange = { correo = it }, label = { Text("Correo") })
+        OutlinedTextField(value = contrasena, onValueChange = { contrasena = it }, label = { Text("Contraseña") })
 
-        Button(onClick = onBack) {
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Registrarse")
         }
     }
@@ -222,48 +250,96 @@ fun MenuScreen(
     onGlobos: () -> Unit,
     onPeluches: () -> Unit,
     onCarrito: () -> Unit,
-    onPerfil: () -> Unit
+    onPerfil: () -> Unit,
+    onMenu: () -> Unit
 ) {
-
-    Box(modifier = Modifier.fillMaxSize()) {
-
-        // 🛒 icono carrito
-        IconButton(
-            onClick = onCarrito,
-            modifier = Modifier.align(Alignment.TopEnd)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFFF7FA))
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
-            Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
+            Text(
+                text = "Categorías",
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.Center)
+            )
+
+            IconButton(
+                onClick = onCarrito,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = "Carrito",
+                    tint = Color(0xFF5B6EA6)
+                )
+            }
         }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Text(
+                text = "Elige una categoría para encontrar el regalo ideal",
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
 
-            Text("Categorías", fontSize = 22.sp)
+            Spacer(modifier = Modifier.height(24.dp))
 
-            Spacer(modifier = Modifier.height(20.dp))
+            BotonCategoria("Detalles", onDetalles)
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Button(onClick = onDetalles, modifier = Modifier.fillMaxWidth()) { Text("Detalles") }
-            Button(onClick = onGlobos, modifier = Modifier.fillMaxWidth()) { Text("Globos") }
-            Button(onClick = onPeluches, modifier = Modifier.fillMaxWidth()) { Text("Peluches") }
+            BotonCategoria("Globos", onGlobos)
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Spacer(modifier = Modifier.weight(1f))
+            BotonCategoria("Peluches", onPeluches)
+            Spacer(modifier = Modifier.height(12.dp))
 
+            BotonCategoria("Regalos", {})
+            Spacer(modifier = Modifier.height(12.dp))
+
+            BotonCategoria("Tazas", {})
         }
     }
 }
+
+@Composable
+fun BotonCategoria(texto: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(58.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF5B6EA6)
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+    ) {
+        Text(
+            text = texto,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
 @Composable
 fun BottomBar(
     onMenu: () -> Unit,
-    onPerfil: () -> Unit
+    onCarrito: () -> Unit
 ) {
-
     val size = carrito.size
-
-    // 🔥 animación escala
     val scale = remember { Animatable(1f) }
 
     LaunchedEffect(size) {
@@ -285,12 +361,13 @@ fun BottomBar(
             .padding(10.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
+        IconButton(onClick = onMenu) {
+            Icon(Icons.Default.Menu, contentDescription = "Menú")
+        }
 
-        // 🛒 carrito con badge animado
         Box {
-
-            IconButton(onClick = onMenu) {
-                Icon(Icons.Default.ShoppingCart, contentDescription = "Menu")
+            IconButton(onClick = onCarrito) {
+                Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
             }
 
             if (size > 0) {
@@ -298,7 +375,7 @@ fun BottomBar(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .offset(x = 6.dp, y = (-6).dp)
-                        .scale(scale.value) // 🔥 animación
+                        .scale(scale.value)
                         .background(Color.Red, shape = CircleShape)
                         .padding(4.dp)
                 ) {
@@ -310,13 +387,9 @@ fun BottomBar(
                 }
             }
         }
-
-        // 👤 perfil
-        IconButton(onClick = onPerfil) {
-            Icon(Icons.Default.Person, contentDescription = "Perfil")
-        }
     }
 }
+
 @Composable
 fun PerfilScreen() {
 
@@ -413,61 +486,94 @@ data class Producto(
 // 🛍️ PRODUCTOS
 @Composable
 fun ProductoItem(producto: Producto) {
-
     var agregado by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        elevation = CardDefaults.cardElevation(6.dp)
+            .padding(vertical = 6.dp),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFFF4F1FA)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-
-        Row(
-            modifier = Modifier
-                .padding(10.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier.padding(12.dp)
         ) {
-
-            Image(
-                painter = painterResource(producto.imagen),
-                contentDescription = producto.nombre,
-                modifier = Modifier.size(80.dp)
-            )
-
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Column(
-                modifier = Modifier.weight(1f) // 🔥 clave para que no se rompa
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(producto.nombre, fontSize = 18.sp)
-                Text(producto.precio, color = Color.Gray)
+                Image(
+                    painter = painterResource(producto.imagen),
+                    contentDescription = producto.nombre,
+                    modifier = Modifier
+                        .size(82.dp)
+                        .clip(RoundedCornerShape(14.dp)),
+                    contentScale = ContentScale.Crop
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = producto.nombre,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2F2F2F),
+                        maxLines = 2
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = producto.precio,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF5B6EA6)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                    onClick = {
+                        carrito.add(producto)
+                        CarritoStorage.guardar(context, carrito)
+                        Toast.makeText(context, "Producto agregado al carrito", Toast.LENGTH_SHORT).show()
+                        agregado = true
+                    },
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF5B6EA6)
+                    ),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
+                ) {
+                    Text(
+                        text = "Agregar",
+                        maxLines = 1,
+                        fontSize = 13.sp
+                    )
+                }
             }
 
-            Button(
-                onClick = {
-                    carrito.add(producto)
-                    CarritoStorage.guardar(context, carrito)
-                    agregado = true
-                },
-                modifier = Modifier.width(100.dp) // 🔥 tamaño fijo
+            AnimatedVisibility(
+                visible = agregado,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut()
             ) {
-                Text("Agregar", maxLines = 1)
+                Text(
+                    text = "✔ Agregado al carrito",
+                    color = Color(0xFF43A047),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(top = 10.dp, start = 4.dp)
+                )
             }
-        }
-
-        AnimatedVisibility(
-            visible = agregado,
-            enter = fadeIn() + expandVertically(),
-            exit = fadeOut()
-        ) {
-            Text(
-                "✔ Agregado",
-                color = Color(0xFF4CAF50),
-                modifier = Modifier.padding(start = 10.dp, bottom = 10.dp)
-            )
         }
     }
 }
@@ -475,6 +581,7 @@ fun ProductoItem(producto: Producto) {
 // 🛒 CARRITO
 @Composable
 fun CarritoScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
 
     val envio = 49
     val subtotal = carrito.sumOf { it.precio.replace("$", "").toInt() }
@@ -486,68 +593,205 @@ fun CarritoScreen(onBack: () -> Unit) {
 
     val direcciones = listOf("Casa - Calle 123", "Trabajo - Oficina centro")
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFFF7FA))
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Carrito",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF2F2F2F)
+        )
 
-        // 👤 info usuario
-        Text("Juan Pérez", fontSize = 20.sp)
-        Text("6441234567")
-        Text(direccion)
+        Spacer(modifier = Modifier.height(16.dp))
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "Juan Pérez",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF2F2F2F)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("6441234567", color = Color.Gray)
+                Text(direccion, color = Color.Gray)
 
-        // 📍 dropdown direcciones
-        Box {
-            Button(onClick = { expanded = true }) {
-                Text("Seleccionar dirección")
-            }
+                Spacer(modifier = Modifier.height(12.dp))
 
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                direcciones.forEach {
-                    DropdownMenuItem(
-                        text = { Text(it) },
-                        onClick = {
-                            direccion = it
-                            expanded = false
+                Box {
+                    Button(
+                        onClick = { expanded = true },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF5B6EA6)
+                        )
+                    ) {
+                        Text("Seleccionar dirección")
+                    }
+
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        direcciones.forEach {
+                            DropdownMenuItem(
+                                text = { Text(it) },
+                                onClick = {
+                                    direccion = it
+                                    expanded = false
+                                }
+                            )
                         }
-                    )
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        Text("Carrito", fontSize = 22.sp)
-
-        LazyColumn {
-            items(carrito) {
-                Text("${it.nombre} - ${it.precio}")
+        if (carrito.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Tu carrito está vacío",
+                    fontSize = 18.sp,
+                    color = Color.Gray
+                )
             }
+        } else {
+            Text(
+                text = "Productos agregados",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF2F2F2F)
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                items(carrito) { producto ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = Color(0xFFF4F1FA)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = producto.nombre,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = Color(0xFF2F2F2F)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = producto.precio,
+                                    color = Color(0xFF5B6EA6),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Resumen de compra",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text("Subtotal: $${subtotal}", color = Color.Gray)
+                    Text("IVA: $${iva}", color = Color.Gray)
+
+                    if (carrito.isNotEmpty()) {
+                        Text("Envío: $${envio}", color = Color.Gray)
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Total: $${total}",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF5B6EA6)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onBack,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Text("Volver")
+            }
 
-        Text("Subtotal: $${subtotal}")
-        Text("IVA: $${iva}")
-
-        if (carrito.isNotEmpty()) {
-            Text("Envío: $${envio}")
-        }
-
-        Text("Total: $${total}", fontSize = 20.sp)
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Button(onClick = onBack) {
-            Text("Volver")
-        }
-
-        val context = LocalContext.current
-
-        Button(onClick = {
-            carrito.clear()
-            CarritoStorage.guardar(context, carrito)
-        }) {
-            Text("Vaciar carrito")
+            Button(
+                onClick = {
+                    carrito.clear()
+                    CarritoStorage.guardar(context, carrito)
+                    Toast.makeText(context, "Carrito vaciado", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF5B6EA6)
+                )
+            ) {
+                Text("Vaciar carrito")
+            }
         }
     }
 }
@@ -581,13 +825,64 @@ fun PeluchesScreen() {
 // 🔁 REUTILIZABLE
 @Composable
 fun ListaProductos(titulo: String, productos: List<Producto>) {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    var busqueda by remember { mutableStateOf("") }
 
-        Text(titulo, fontSize = 24.sp)
+    val filtrados = productos.filter {
+        it.nombre.contains(busqueda, ignoreCase = true)
+    }
 
-        LazyColumn {
-            items(productos) {
-                ProductoItem(it)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFFF7FA))
+            .padding(16.dp)
+    ) {
+        Text(
+            text = titulo,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF2F2F2F)
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = "Encuentra un detalle especial para esa ocasión",
+            fontSize = 14.sp,
+            color = Color.Gray
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = busqueda,
+            onValueChange = { busqueda = it },
+            label = { Text("Buscar producto") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (filtrados.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No se encontraron productos",
+                    color = Color.Gray,
+                    fontSize = 16.sp
+                )
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(filtrados) { producto ->
+                    ProductoItem(producto)
+                }
             }
         }
     }
