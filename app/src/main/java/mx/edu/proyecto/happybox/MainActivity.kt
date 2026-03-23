@@ -101,6 +101,8 @@ fun AppNavigation() {
                         onDetalles = { screen = "detalles" },
                         onGlobos = { screen = "globos" },
                         onPeluches = { screen = "peluches" },
+                        onRegalos = { screen = "regalos" }, // 👈 AQUÍ
+                        onTazas = { screen = "tazas" },     // 👈 AQUÍ
                         onCarrito = { screen = "carrito" },
                         onPerfil = { screen = "perfil" },
                         onMenu = { screen = "menu" }
@@ -128,8 +130,17 @@ fun AppNavigation() {
                 }
 
                 "perfil" -> {
-                    BackHandler { screen = "perfil" }
+                    BackHandler { screen = "menu" }
                     PerfilScreen()
+                }
+                "regalos" -> {
+                    BackHandler { screen = "menu" }
+                    RegalosScreen()
+                }
+
+                "tazas" -> {
+                    BackHandler { screen = "menu" }
+                    TazasScreen()
                 }
             }
         }
@@ -249,6 +260,8 @@ fun MenuScreen(
     onDetalles: () -> Unit,
     onGlobos: () -> Unit,
     onPeluches: () -> Unit,
+    onRegalos: () -> Unit,
+    onTazas: () -> Unit,
     onCarrito: () -> Unit,
     onPerfil: () -> Unit,
     onMenu: () -> Unit
@@ -256,30 +269,35 @@ fun MenuScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFF7FA))
+            .background(Color(0xFFFFF7FA)),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 14.dp)
         ) {
-            Text(
-                text = "Categorías",
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.Center)
-            )
 
+            // 👤 ICONO PERFIL
             IconButton(
-                onClick = onCarrito,
+                onClick = onPerfil,
                 modifier = Modifier.align(Alignment.CenterEnd)
             ) {
                 Icon(
                     Icons.Default.Person,
-                    contentDescription = "Carrito",
+                    contentDescription = "Perfil",
                     tint = Color(0xFF5B6EA6)
                 )
             }
+
+            // 🖼️ TÍTULO CENTRADO REAL
+            Image(
+                painter = painterResource(R.drawable.titulocategorias),
+                contentDescription = "Categorias",
+                modifier = Modifier
+                    .fillMaxWidth(0.7f) // 👈 ESTO (tamaño más grande proporcional)
+                    .align(Alignment.Center),
+                contentScale = ContentScale.Fit
+            )
         }
 
         Column(
@@ -305,10 +323,10 @@ fun MenuScreen(
             BotonCategoria("Peluches", onPeluches)
             Spacer(modifier = Modifier.height(12.dp))
 
-            BotonCategoria("Regalos", {})
+            BotonCategoria("Regalos", onRegalos)
             Spacer(modifier = Modifier.height(12.dp))
 
-            BotonCategoria("Tazas", {})
+            BotonCategoria("Tazas", onTazas)
         }
     }
 }
@@ -407,31 +425,108 @@ fun PerfilScreen() {
     var numero by remember { mutableStateOf("") }
     var entreCalles by remember { mutableStateOf("") }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFFF7FA))
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
 
-        Text("Perfil", fontSize = 22.sp)
+        // 🖼️ TÍTULO CON TU IMAGEN
+        Image(
+            painter = painterResource(R.drawable.tituloperfil),
+            contentDescription = "Perfil",
+            modifier = Modifier.height(80.dp)
+        )
 
-        Text("Nombre: Juan Pérez")
-        Text("Teléfono: 6441234567")
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 👤 TARJETA USUARIO
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(6.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = "Usuario",
+                    modifier = Modifier
+                        .size(70.dp)
+                        .background(Color(0xFFEDE7F6), CircleShape)
+                        .padding(12.dp),
+                    tint = Color(0xFF5B6EA6)
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    "Juan Pérez",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    "6441234567",
+                    color = Color.Gray
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 📍 TÍTULO UBICACIONES
+        Text(
+            text = "Mis ubicaciones",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold
+        )
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Text("Ubicaciones:")
-
-        ubicaciones.forEach {
-            Text("• $it")
+        // 📦 LISTA BONITA
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(ubicaciones) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(3.dp)
+                ) {
+                    Text(
+                        text = it,
+                        modifier = Modifier.padding(12.dp),
+                        fontSize = 14.sp
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Button(onClick = {
-            mostrarFormulario = true
-        }) {
+        // ➕ BOTÓN
+        Button(
+            onClick = { mostrarFormulario = true },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF5B6EA6)
+            )
+        ) {
             Text("+ Agregar ubicación")
         }
     }
 
-    // 🔥 FORMULARIO MODAL
+    // 🔥 FORMULARIO (EL MISMO QUE YA TENÍAS)
     if (mostrarFormulario) {
         AlertDialog(
             onDismissRequest = { mostrarFormulario = false },
@@ -440,7 +535,6 @@ fun PerfilScreen() {
                     val nueva = "$calle #$numero, $ciudad, $estado, CP $cp ($entreCalles)"
                     ubicaciones = ubicaciones + nueva
 
-                    // limpiar campos
                     cp = ""
                     estado = ""
                     ciudad = ""
@@ -460,16 +554,13 @@ fun PerfilScreen() {
             },
             title = { Text("Nueva ubicación") },
             text = {
-
                 Column {
-
                     OutlinedTextField(cp, { cp = it }, label = { Text("CP") })
                     OutlinedTextField(estado, { estado = it }, label = { Text("Estado") })
                     OutlinedTextField(ciudad, { ciudad = it }, label = { Text("Ciudad") })
                     OutlinedTextField(calle, { calle = it }, label = { Text("Calle principal") })
                     OutlinedTextField(numero, { numero = it }, label = { Text("Número exterior") })
                     OutlinedTextField(entreCalles, { entreCalles = it }, label = { Text("Entre qué calles") })
-
                 }
             }
         )
@@ -821,6 +912,20 @@ fun PeluchesScreen() {
     )
     ListaProductos("Peluches", productos)
 }
+@Composable
+fun RegalosScreen() {
+    val productos = listOf(
+        Producto("Caja premium con globos", "$450", R.drawable.regalo1)
+    )
+    ListaProductos("Regalos", productos)
+}
+@Composable
+fun TazasScreen() {
+    val productos = listOf(
+        Producto("Taza personalizada", "$180", R.drawable.taza1)
+    )
+    ListaProductos("Tazas", productos)
+}
 
 // 🔁 REUTILIZABLE
 @Composable
@@ -837,11 +942,22 @@ fun ListaProductos(titulo: String, productos: List<Producto>) {
             .background(Color(0xFFFFF7FA))
             .padding(16.dp)
     ) {
-        Text(
-            text = titulo,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF2F2F2F)
+        Image(
+            painter = painterResource(
+                when (titulo) {
+                    "Globos" -> R.drawable.tituloglobos
+                    "Peluches" -> R.drawable.titulopeluches
+                    "Detalles" -> R.drawable.titulodetalles
+                    "Regalos" -> R.drawable.tituloregalos
+                    "Tazas" -> R.drawable.titulotazas
+                    else -> R.drawable.titulocategorias
+                }
+            ),
+            contentDescription = titulo,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(80.dp),
+            contentScale = ContentScale.Fit
         )
 
         Spacer(modifier = Modifier.height(6.dp))
