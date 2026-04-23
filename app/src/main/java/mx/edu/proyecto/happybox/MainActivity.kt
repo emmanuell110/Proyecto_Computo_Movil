@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material.icons.filled.Settings
 
 
 // 🔥 carrito global
@@ -131,7 +132,9 @@ fun AppNavigation() {
 
                 "perfil" -> {
                     BackHandler { screen = "menu" }
-                    PerfilScreen()
+                    PerfilScreen(
+                        onConfig = { screen = "config" }
+                    )
                 }
                 "regalos" -> {
                     BackHandler { screen = "menu" }
@@ -141,6 +144,28 @@ fun AppNavigation() {
                 "tazas" -> {
                     BackHandler { screen = "menu" }
                     TazasScreen()
+                }
+                "config" -> {
+                    BackHandler { screen = "perfil" }
+                    ConfigScreen(
+                        onPerfilEdit = { screen = "editarPerfil" },
+                        onSoporte = { screen = "soporte" },
+                        onAyuda = { screen = "ayuda" },
+                        onLogout = { screen = "login" }
+                    )
+                }
+                "soporte" -> {
+                    BackHandler { screen = "config" }
+                    SoporteScreen()
+                }
+
+                "ayuda" -> {
+                    BackHandler { screen = "config" }
+                    AyudaScreen()
+                }
+                "editarPerfil" -> {
+                    BackHandler { screen = "config" }
+                    EditarPerfilScreen()
                 }
             }
         }
@@ -409,7 +434,7 @@ fun BottomBar(
 }
 
 @Composable
-fun PerfilScreen() {
+fun PerfilScreen(onConfig: () -> Unit) {
 
     var ubicaciones by remember {
         mutableStateOf(listOf("Casa - Calle 123"))
@@ -434,11 +459,31 @@ fun PerfilScreen() {
     ) {
 
         // 🖼️ TÍTULO CON TU IMAGEN
-        Image(
-            painter = painterResource(R.drawable.tituloperfil),
-            contentDescription = "Perfil",
-            modifier = Modifier.height(80.dp)
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+        ) {
+
+            Image(
+                painter = painterResource(R.drawable.tituloperfil),
+                contentDescription = "Perfil",
+                modifier = Modifier
+                    .height(80.dp)
+                    .align(Alignment.Center)
+            )
+
+            IconButton(
+                onClick = onConfig,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Configuración",
+                    tint = Color(0xFF5B6EA6)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -573,6 +618,215 @@ data class Producto(
     val precio: String,
     val imagen: Int
 )
+@Composable
+fun ConfigScreen(
+    onSoporte: () -> Unit,
+    onAyuda: () -> Unit,
+    onPerfilEdit: () -> Unit,
+    onLogout: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text("Configuración", fontSize = 24.sp)
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 👤 EDITAR PERFIL
+        Button(
+            onClick = onPerfilEdit,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Mi perfil")
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // 🛠 SOPORTE
+        Button(
+            onClick = onSoporte,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Soporte")
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // ❓ AYUDA
+        Button(
+            onClick = onAyuda,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Ayuda")
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // 🔴 LOGOUT
+        Button(
+            onClick = onLogout,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Cerrar sesión", color = Color.White)
+        }
+    }
+}
+@Composable
+fun SoporteScreen() {
+
+    var problema by remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text(
+            text = "Reportar un problema",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = problema,
+            onValueChange = { problema = it },
+            label = { Text("Describe el problema") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(
+            onClick = { /* enviar */ },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Enviar reporte")
+        }
+    }
+}
+@Composable
+fun EditarPerfilScreen() {
+
+    var nombre by remember { mutableStateOf("Juan Pérez") }
+    var telefono by remember { mutableStateOf("6441234567") }
+
+    var puedeCambiarNombre by remember { mutableStateOf(true) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text("Editar perfil", fontSize = 24.sp)
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 👤 NOMBRE
+        OutlinedTextField(
+            value = nombre,
+            onValueChange = {
+                if (puedeCambiarNombre) nombre = it
+            },
+            label = { Text("Nombre") },
+            enabled = puedeCambiarNombre
+        )
+
+        if (!puedeCambiarNombre) {
+            Text(
+                "Solo puedes cambiar el nombre cada 30 días",
+                color = Color.Red,
+                fontSize = 12.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // 📱 TELÉFONO
+        OutlinedTextField(
+            value = telefono,
+            onValueChange = { telefono = it },
+            label = { Text("Teléfono") }
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Button(onClick = {
+            // 🔥 aquí iría Firebase SMS
+        }) {
+            Text("Verificar número")
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(
+            onClick = {
+                puedeCambiarNombre = false // simula bloqueo 30 días
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Guardar cambios")
+        }
+    }
+}
+@Composable
+fun AyudaScreen() {
+
+    val preguntas = listOf(
+        "¿Qué métodos de pago hay?" to "Efectivo y tarjeta",
+        "¿Hacen envíos?" to "Sí, a domicilio",
+        "¿Cuánto tarda el pedido?" to "De 1 a 3 días",
+        "¿Puedo personalizar productos?" to "Sí, algunos productos"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text(
+            text = "Ayuda",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyColumn {
+            items(preguntas) { (pregunta, respuesta) ->
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+
+                        Text(
+                            pregunta,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(respuesta, color = Color.Gray)
+                    }
+                }
+            }
+        }
+    }
+}
 
 // 🛍️ PRODUCTOS
 @Composable
