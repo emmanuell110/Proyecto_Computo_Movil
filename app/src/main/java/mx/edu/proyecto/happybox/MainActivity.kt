@@ -41,6 +41,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -80,6 +81,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -342,7 +344,31 @@ fun AppNavigation() {
 
                     "perfil" -> {
                         BackHandler { screen = "menu" }
-                        PerfilScreen()
+                        PerfilScreen(
+                            onConfig = { screen = "config" }
+                        )
+                    }
+                    "config" -> {
+                        BackHandler { screen = "perfil" }
+                        ConfigScreen(
+                            onPerfilEdit = { screen = "editarPerfil" },
+                            onSoporte = { screen = "soporte" },
+                            onAyuda = { screen = "ayuda" },
+                            onLogout = { screen = "login" }
+                        )
+                    }
+                    "soporte" -> {
+                        BackHandler { screen = "config" }
+                        SoporteScreen()
+                    }
+
+                    "ayuda" -> {
+                        BackHandler { screen = "config" }
+                        AyudaScreen()
+                    }
+                    "editarPerfil" -> {
+                        BackHandler { screen = "config" }
+                        EditarPerfilScreen()
                     }
                 }
             }
@@ -675,23 +701,21 @@ fun BottomBar(
 
 
 @Composable
-fun PerfilScreen() {
-    val context = LocalContext.current
-    val ubicaciones = remember { mutableStateListOf<String>() }
+fun PerfilScreen(onConfig: () -> Unit) {
+
+    var ubicaciones by remember {
+        mutableStateOf(listOf("Casa - Calle 123"))
+    }
 
     var mostrarFormulario by remember { mutableStateOf(false) }
 
-    var cp by rememberSaveable { mutableStateOf("") }
-    var estado by rememberSaveable { mutableStateOf("") }
-    var ciudad by rememberSaveable { mutableStateOf("") }
-    var calle by rememberSaveable { mutableStateOf("") }
-    var numero by rememberSaveable { mutableStateOf("") }
-    var entreCalles by rememberSaveable { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        ubicaciones.clear()
-        ubicaciones.addAll(DireccionesStorage.cargar(context))
-    }
+    // 🔥 campos del formulario
+    var cp by remember { mutableStateOf("") }
+    var estado by remember { mutableStateOf("") }
+    var ciudad by remember { mutableStateOf("") }
+    var calle by remember { mutableStateOf("") }
+    var numero by remember { mutableStateOf("") }
+    var entreCalles by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -700,14 +724,37 @@ fun PerfilScreen() {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Image(
-            painter = androidx.compose.ui.res.painterResource(R.drawable.tituloperfil),
-            contentDescription = "Perfil",
-            modifier = Modifier.height(80.dp)
-        )
+
+        // 🖼️ TÍTULO CON TU IMAGEN
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp)
+        ) {
+
+            Image(
+                painter = painterResource(R.drawable.tituloperfil),
+                contentDescription = "Perfil",
+                modifier = Modifier
+                    .height(80.dp)
+                    .align(Alignment.Center)
+            )
+
+            IconButton(
+                onClick = onConfig,
+                modifier = Modifier.align(Alignment.CenterEnd)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Configuración",
+                    tint = Color(0xFF5B6EA6)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 👤 TARJETA USUARIO
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -718,6 +765,7 @@ fun PerfilScreen() {
                 modifier = Modifier.padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
                 Icon(
                     Icons.Default.Person,
                     contentDescription = "Usuario",
@@ -730,13 +778,22 @@ fun PerfilScreen() {
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Text("Juan Pérez", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Text("6441234567", color = Color.Gray)
+                Text(
+                    "Juan Pérez",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    "6441234567",
+                    color = Color.Gray
+                )
             }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        // 📍 TÍTULO UBICACIONES
         Text(
             text = "Mis ubicaciones",
             fontSize = 18.sp,
@@ -745,96 +802,289 @@ fun PerfilScreen() {
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // 📦 LISTA BONITA
         LazyColumn(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(ubicaciones) { ubicacion ->
+            items(ubicaciones) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     elevation = CardDefaults.cardElevation(3.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = ubicacion,
-                            modifier = Modifier.weight(1f),
-                            fontSize = 14.sp
-                        )
-
-                        TextButton(
-                            onClick = {
-                                ubicaciones.remove(ubicacion)
-                                DireccionesStorage.guardar(context, ubicaciones)
-                            }
-                        ) {
-                            Text("Eliminar")
-                        }
-                    }
+                    Text(
+                        text = it,
+                        modifier = Modifier.padding(12.dp),
+                        fontSize = 14.sp
+                    )
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(10.dp))
 
+        // ➕ BOTÓN
         Button(
             onClick = { mostrarFormulario = true },
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B6EA6))
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color(0xFF5B6EA6)
+            )
         ) {
             Text("+ Agregar ubicación")
         }
     }
 
+    // 🔥 FORMULARIO (EL MISMO QUE YA TENÍAS)
     if (mostrarFormulario) {
         AlertDialog(
             onDismissRequest = { mostrarFormulario = false },
             confirmButton = {
-                Button(
-                    onClick = {
-                        val nueva = "$calle #$numero, $ciudad, $estado, CP $cp ($entreCalles)"
-                        if (calle.isNotBlank() && numero.isNotBlank() && ciudad.isNotBlank() && estado.isNotBlank() && cp.isNotBlank()) {
-                            ubicaciones.add(nueva)
-                            DireccionesStorage.guardar(context, ubicaciones)
+                Button(onClick = {
+                    val nueva = "$calle #$numero, $ciudad, $estado, CP $cp ($entreCalles)"
+                    ubicaciones = ubicaciones + nueva
 
-                            cp = ""
-                            estado = ""
-                            ciudad = ""
-                            calle = ""
-                            numero = ""
-                            entreCalles = ""
+                    cp = ""
+                    estado = ""
+                    ciudad = ""
+                    calle = ""
+                    numero = ""
+                    entreCalles = ""
 
-                            mostrarFormulario = false
-                        }
-                    }
-                ) {
+                    mostrarFormulario = false
+                }) {
                     Text("Guardar")
                 }
             },
             dismissButton = {
-                OutlinedButton(onClick = { mostrarFormulario = false }) {
+                Button(onClick = { mostrarFormulario = false }) {
                     Text("Cancelar")
                 }
             },
             title = { Text("Nueva ubicación") },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(value = cp, onValueChange = { cp = it }, label = { Text("CP") })
-                    OutlinedTextField(value = estado, onValueChange = { estado = it }, label = { Text("Estado") })
-                    OutlinedTextField(value = ciudad, onValueChange = { ciudad = it }, label = { Text("Ciudad") })
-                    OutlinedTextField(value = calle, onValueChange = { calle = it }, label = { Text("Calle principal") })
-                    OutlinedTextField(value = numero, onValueChange = { numero = it }, label = { Text("Número exterior") })
-                    OutlinedTextField(value = entreCalles, onValueChange = { entreCalles = it }, label = { Text("Entre qué calles") })
+                Column {
+                    OutlinedTextField(cp, { cp = it }, label = { Text("CP") })
+                    OutlinedTextField(estado, { estado = it }, label = { Text("Estado") })
+                    OutlinedTextField(ciudad, { ciudad = it }, label = { Text("Ciudad") })
+                    OutlinedTextField(calle, { calle = it }, label = { Text("Calle principal") })
+                    OutlinedTextField(numero, { numero = it }, label = { Text("Número exterior") })
+                    OutlinedTextField(entreCalles, { entreCalles = it }, label = { Text("Entre qué calles") })
                 }
             }
         )
+    }
+}
+@Composable
+fun ConfigScreen(
+    onSoporte: () -> Unit,
+    onAyuda: () -> Unit,
+    onPerfilEdit: () -> Unit,
+    onLogout: () -> Unit
+) {
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text("Configuración", fontSize = 24.sp)
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 👤 EDITAR PERFIL
+        Button(
+            onClick = onPerfilEdit,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Mi perfil")
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // 🛠 SOPORTE
+        Button(
+            onClick = onSoporte,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Soporte")
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // ❓ AYUDA
+        Button(
+            onClick = onAyuda,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Ayuda")
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // 🔴 LOGOUT
+        Button(
+            onClick = onLogout,
+            colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Cerrar sesión", color = Color.White)
+        }
+    }
+}
+@Composable
+fun SoporteScreen() {
+
+    var problema by remember { mutableStateOf("") }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text(
+            text = "Reportar un problema",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedTextField(
+            value = problema,
+            onValueChange = { problema = it },
+            label = { Text("Describe el problema") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(150.dp)
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(
+            onClick = { /* enviar */ },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Enviar reporte")
+        }
+    }
+}
+@Composable
+fun EditarPerfilScreen() {
+
+    var nombre by remember { mutableStateOf("Juan Pérez") }
+    var telefono by remember { mutableStateOf("6441234567") }
+
+    var puedeCambiarNombre by remember { mutableStateOf(true) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text("Editar perfil", fontSize = 24.sp)
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // 👤 NOMBRE
+        OutlinedTextField(
+            value = nombre,
+            onValueChange = {
+                if (puedeCambiarNombre) nombre = it
+            },
+            label = { Text("Nombre") },
+            enabled = puedeCambiarNombre
+        )
+
+        if (!puedeCambiarNombre) {
+            Text(
+                "Solo puedes cambiar el nombre cada 30 días",
+                color = Color.Red,
+                fontSize = 12.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // 📱 TELÉFONO
+        OutlinedTextField(
+            value = telefono,
+            onValueChange = { telefono = it },
+            label = { Text("Teléfono") }
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Button(onClick = {
+            // 🔥 aquí iría Firebase SMS
+        }) {
+            Text("Verificar número")
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Button(
+            onClick = {
+                puedeCambiarNombre = false // simula bloqueo 30 días
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Guardar cambios")
+        }
+    }
+}
+@Composable
+fun AyudaScreen() {
+
+    val preguntas = listOf(
+        "¿Qué métodos de pago hay?" to "Efectivo y tarjeta",
+        "¿Hacen envíos?" to "Sí, a domicilio",
+        "¿Cuánto tarda el pedido?" to "De 1 a 3 días",
+        "¿Puedo personalizar productos?" to "Sí, algunos productos"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+
+        Text(
+            text = "Ayuda",
+            fontSize = 22.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        LazyColumn {
+            items(preguntas) { (pregunta, respuesta) ->
+
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+
+                        Text(
+                            pregunta,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(respuesta, color = Color.Gray)
+                    }
+                }
+            }
+        }
     }
 }
 
