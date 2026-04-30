@@ -48,6 +48,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -83,6 +84,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -91,6 +94,9 @@ import mx.edu.proyecto.happybox.ui.theme.HappyboxTheme
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.random.Random
+import com.google.firebase.FirebaseApp
+import mx.edu.proyecto.happybox.auth.AuthRepository
+import mx.edu.proyecto.happybox.auth.AuthManager
 
 data class CartItem(
     val producto: Producto,
@@ -118,6 +124,7 @@ val carrito = mutableStateListOf<CartItem>()
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseApp.initializeApp(this)
         enableEdgeToEdge()
 
         setContent {
@@ -137,8 +144,10 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun AppNavigation() {
+
     val context = LocalContext.current
-    var screen by rememberSaveable { mutableStateOf("inicio") }
+    val isLoggedIn = AuthRepository.getCurrentUser() != null
+    var screen by rememberSaveable { mutableStateOf(if (isLoggedIn) "menu" else "inicio") }
 
     val direcciones = remember { mutableStateListOf<String>() }
     val tarjetas = remember { mutableStateListOf<TarjetaInfo>() }
@@ -354,7 +363,10 @@ fun AppNavigation() {
                             onPerfilEdit = { screen = "editarPerfil" },
                             onSoporte = { screen = "soporte" },
                             onAyuda = { screen = "ayuda" },
-                            onLogout = { screen = "login" }
+                            onLogout = {
+                                AuthRepository.logout()
+                                screen = "login"
+                            }
                         )
                     }
                     "soporte" -> {
@@ -413,143 +425,174 @@ fun InicioScreen(onEntrar: () -> Unit) {
 
 @Composable
 fun LoginScreen(onLogin: () -> Unit, onRegistro: () -> Unit) {
-    var user by rememberSaveable { mutableStateOf("") }
-    var pass by rememberSaveable { mutableStateOf("") }
+
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var mostrarPassword by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .padding(20.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Iniciar Sesión", fontSize = 22.sp, fontWeight = FontWeight.Bold)
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Text("Bienvenido", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+
+        Spacer(modifier = Modifier.height(20.dp))
 
         OutlinedTextField(
-            value = user,
-            onValueChange = { user = it },
-            label = { Text("Correo o Teléfono") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            value = email,
+            onValueChange = { email = it },
+            label = { Text("Correo") },
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(10.dp))
 
         OutlinedTextField(
-            value = pass,
-            onValueChange = { pass = it },
+            value = password,
+            onValueChange = { password = it },
             label = { Text("Contraseña") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
+            visualTransformation = if (mostrarPassword) androidx.compose.ui.text.input.VisualTransformation.None
+            else androidx.compose.ui.text.input.PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth()
         )
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = mostrarPassword,
+                onCheckedChange = { mostrarPassword = it }
+            )
+            Text("Mostrar contraseña")
+        }
+
+        if (error.isNotBlank()) {
+            Text(error, color = Color.Red)
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
-            onClick = onLogin,
+            onClick = {
+                val errorMsg = AuthManager.validarLogin(email, password)
+
+                if (errorMsg != null) {
+                    error = errorMsg
+                } else {
+                    error = ""
+
+                    AuthRepository.login(email, password) { success, msg ->
+                        if (success) {
+                            onLogin()
+                        } else {
+                            error = msg
+                        }
+                    }
+                }
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Entrar")
+            Text("Iniciar sesión")
         }
 
-        TextButton(onClick = onRegistro) {
-            Text("Crear cuenta")
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row {
+            Text("¿No tienes cuenta? ")
+            TextButton(onClick = onRegistro) {
+                Text("Registrarse")
+            }
         }
     }
 }
 
 @Composable
 fun RegisterScreen(onBack: () -> Unit) {
-    var nombre by rememberSaveable { mutableStateOf("") }
-    var apellidos by rememberSaveable { mutableStateOf("") }
-    var edad by rememberSaveable { mutableStateOf("") }
-    var direccion by rememberSaveable { mutableStateOf("") }
-    var telefono by rememberSaveable { mutableStateOf("") }
-    var correo by rememberSaveable { mutableStateOf("") }
-    var contrasena by rememberSaveable { mutableStateOf("") }
 
-    LazyColumn(
+    var nombre by rememberSaveable { mutableStateOf("") }
+    var correo by rememberSaveable { mutableStateOf("") }
+    var telefono by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
+
+    var mostrarPassword by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf("") }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center
     ) {
-        item {
-            Text("Crear cuenta", fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Text("Crear cuenta", fontSize = 26.sp, fontWeight = FontWeight.Bold)
 
-            OutlinedTextField(
-                value = nombre,
-                onValueChange = { nombre = it },
-                label = { Text("Nombre") },
-                modifier = Modifier.fillMaxWidth()
+        Spacer(modifier = Modifier.height(20.dp))
+
+        OutlinedTextField(nombre, { nombre = it }, label = { Text("Nombre") })
+        OutlinedTextField(correo, { correo = it }, label = { Text("Correo") })
+        OutlinedTextField(telefono, { telefono = it }, label = { Text("Teléfono") })
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text("Contraseña") },
+            visualTransformation = if (mostrarPassword) VisualTransformation.None else PasswordVisualTransformation()
+        )
+
+        OutlinedTextField(
+            value = confirmPassword,
+            onValueChange = { confirmPassword = it },
+            label = { Text("Confirmar contraseña") },
+            visualTransformation = if (mostrarPassword) VisualTransformation.None else PasswordVisualTransformation()
+        )
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = mostrarPassword,
+                onCheckedChange = { mostrarPassword = it }
             )
+            Text("Mostrar contraseña")
+        }
 
-            Spacer(modifier = Modifier.height(10.dp))
+        if (error.isNotBlank()) {
+            Text(error, color = Color.Red)
+        }
 
-            OutlinedTextField(
-                value = apellidos,
-                onValueChange = { apellidos = it },
-                label = { Text("Apellidos") },
-                modifier = Modifier.fillMaxWidth()
-            )
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(10.dp))
+        Button(
+            onClick = {
 
-            OutlinedTextField(
-                value = edad,
-                onValueChange = { edad = it },
-                label = { Text("Edad") },
-                modifier = Modifier.fillMaxWidth()
-            )
+                val errorMsg = AuthManager.validarRegistro(
+                    nombre, correo, telefono, password, confirmPassword
+                )
 
-            Spacer(modifier = Modifier.height(10.dp))
+                if (errorMsg != null) {
+                    error = errorMsg
+                } else {
+                    error = ""
 
-            OutlinedTextField(
-                value = direccion,
-                onValueChange = { direccion = it },
-                label = { Text("Dirección") },
-                modifier = Modifier.fillMaxWidth()
-            )
+                    AuthRepository.register(
+                        nombre,
+                        correo,
+                        telefono,
+                        password
+                    ) { success, msg ->
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            OutlinedTextField(
-                value = telefono,
-                onValueChange = { telefono = it },
-                label = { Text("Teléfono") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            OutlinedTextField(
-                value = correo,
-                onValueChange = { correo = it },
-                label = { Text("Correo") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            OutlinedTextField(
-                value = contrasena,
-                onValueChange = { contrasena = it },
-                label = { Text("Contraseña") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Button(
-                onClick = onBack,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Registrarse")
-            }
+                        if (success) {
+                            onBack()
+                        } else {
+                            error = msg
+                        }
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Registrarse")
         }
     }
 }
@@ -703,19 +746,35 @@ fun BottomBar(
 @Composable
 fun PerfilScreen(onConfig: () -> Unit) {
 
+    // 🔥 DATOS FIREBASE
+    var nombre by remember { mutableStateOf("") }
+    var telefono by remember { mutableStateOf("") }
+    var cargando by remember { mutableStateOf(true) }
+
+    // 🔥 UBICACIONES (igual que ya tenías)
     var ubicaciones by remember {
         mutableStateOf(listOf("Casa - Calle 123"))
     }
 
     var mostrarFormulario by remember { mutableStateOf(false) }
 
-    // 🔥 campos del formulario
     var cp by remember { mutableStateOf("") }
     var estado by remember { mutableStateOf("") }
     var ciudad by remember { mutableStateOf("") }
     var calle by remember { mutableStateOf("") }
     var numero by remember { mutableStateOf("") }
     var entreCalles by remember { mutableStateOf("") }
+
+    // 🔥 CARGAR DATOS DEL USUARIO
+    LaunchedEffect(Unit) {
+        mx.edu.proyecto.happybox.auth.AuthRepository.obtenerDatosUsuario {
+            if (it != null) {
+                nombre = it["nombre"] ?: ""
+                telefono = it["telefono"] ?: ""
+            }
+            cargando = false
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -725,7 +784,7 @@ fun PerfilScreen(onConfig: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // 🖼️ TÍTULO CON TU IMAGEN
+        // 🖼️ HEADER
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -754,7 +813,7 @@ fun PerfilScreen(onConfig: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 👤 TARJETA USUARIO
+        // 👤 TARJETA USUARIO (DINÁMICA)
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -778,16 +837,20 @@ fun PerfilScreen(onConfig: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Text(
-                    "Juan Pérez",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                if (cargando) {
+                    Text("Cargando...", color = Color.Gray)
+                } else {
+                    Text(
+                        text = nombre.ifBlank { "Sin nombre" },
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
 
-                Text(
-                    "6441234567",
-                    color = Color.Gray
-                )
+                    Text(
+                        text = telefono.ifBlank { "Sin teléfono" },
+                        color = Color.Gray
+                    )
+                }
             }
         }
 
@@ -802,7 +865,7 @@ fun PerfilScreen(onConfig: () -> Unit) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 📦 LISTA BONITA
+        // 📦 LISTA
         LazyColumn(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -838,7 +901,7 @@ fun PerfilScreen(onConfig: () -> Unit) {
         }
     }
 
-    // 🔥 FORMULARIO (EL MISMO QUE YA TENÍAS)
+    // 🔥 FORMULARIO
     if (mostrarFormulario) {
         AlertDialog(
             onDismissRequest = { mostrarFormulario = false },
