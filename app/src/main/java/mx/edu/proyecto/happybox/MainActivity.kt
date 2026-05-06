@@ -93,10 +93,11 @@ import mx.edu.proyecto.happybox.ui.theme.HappyboxTheme
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.random.Random
+import mx.edu.proyecto.happybox.auth.CarritoRepository
 
 data class CartItem(
-    val producto: Producto,
-    val cantidad: Int
+    val producto: Producto = Producto(),
+    val cantidad: Int = 0
 )
 
 data class TarjetaInfo(
@@ -154,9 +155,15 @@ fun AppNavigation() {
     var codigoVenta by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        carrito.clear()
-        carrito.addAll(CarritoStorage.cargar(context))
 
+        // 🔥 CARGAR CARRITO FIREBASE
+        CarritoRepository.obtenerCarrito { lista ->
+
+            carrito.clear()
+            carrito.addAll(lista)
+        }
+
+        // LOCAL
         direcciones.clear()
         direcciones.addAll(DireccionesStorage.cargar(context))
 
@@ -360,7 +367,7 @@ fun AppNavigation() {
                             onBack = { screen = "metodo_pago" },
                             onFinalizarCompra = {
                                 carrito.clear()
-                                CarritoStorage.guardar(context, carrito)
+                                CarritoRepository.vaciarCarrito()
                                 Toast.makeText(
                                     context,
                                     "Compra finalizada con éxito",
@@ -392,7 +399,7 @@ fun AppNavigation() {
                             onBack = { screen = "metodo_pago" },
                             onFinalizarCompra = {
                                 carrito.clear()
-                                CarritoStorage.guardar(context, carrito)
+                                CarritoRepository.vaciarCarrito()
                                 Toast.makeText(
                                     context,
                                     "Pago realizado con éxito",
@@ -417,7 +424,13 @@ fun AppNavigation() {
                             onSoporte = { screen = "soporte" },
                             onAyuda = { screen = "ayuda" },
                             onLogout = {
+
+                                // 🔥 limpiar carrito local
+                                carrito.clear()
+
+                                // logout firebase
                                 AuthRepository.logout()
+
                                 screen = "login"
                             }
                         )
@@ -589,7 +602,20 @@ fun LoginScreen(onLogin: () -> Unit, onRegistro: () -> Unit) {
                         } else {
                             error = ""
                             AuthRepository.login(email, password) { success, msg ->
-                                if (success) onLogin() else error = msg
+                                if (success) {
+
+                                    // 🔥 cargar carrito del usuario
+                                    CarritoRepository.obtenerCarrito { lista ->
+
+                                        carrito.clear()
+                                        carrito.addAll(lista)
+
+                                        onLogin()
+                                    }
+
+                                } else {
+                                    error = msg
+                                }
                             }
                         }
                     },
@@ -1774,39 +1800,73 @@ fun DetalleProductoScreen(
 }
 
 fun agregarAlCarrito(producto: Producto, cantidad: Int, context: Context) {
+
     if (cantidad <= 0) return
 
-    val index = carrito.indexOfFirst { it.producto.nombre == producto.nombre }
-
-    if (index >= 0) {
-        val itemActual = carrito[index]
-        carrito[index] = itemActual.copy(cantidad = itemActual.cantidad + cantidad)
-    } else {
-        carrito.add(CartItem(producto = producto, cantidad = cantidad))
+    val index = carrito.indexOfFirst {
+        it.producto.nombre == producto.nombre
     }
 
-    CarritoStorage.guardar(context, carrito)
+    if (index >= 0) {
+
+        val itemActual = carrito[index]
+
+        carrito[index] = itemActual.copy(
+            cantidad = itemActual.cantidad + cantidad
+        )
+
+    } else {
+
+        carrito.add(
+            CartItem(
+                producto = producto,
+                cantidad = cantidad
+            )
+        )
+    }
+
+    // 🔥 GUARDAR FIREBASE
+    CarritoRepository.guardarCarrito(carrito)
 }
 
 fun aumentarCantidad(producto: Producto, context: Context) {
-    val index = carrito.indexOfFirst { it.producto.nombre == producto.nombre }
+
+    val index = carrito.indexOfFirst {
+        it.producto.nombre == producto.nombre
+    }
+
     if (index >= 0) {
+
         val itemActual = carrito[index]
-        carrito[index] = itemActual.copy(cantidad = itemActual.cantidad + 1)
-        CarritoStorage.guardar(context, carrito)
+
+        carrito[index] = itemActual.copy(
+            cantidad = itemActual.cantidad + 1
+        )
+
+        CarritoRepository.guardarCarrito(carrito)
     }
 }
 
 fun disminuirCantidad(producto: Producto, context: Context) {
-    val index = carrito.indexOfFirst { it.producto.nombre == producto.nombre }
+
+    val index = carrito.indexOfFirst {
+        it.producto.nombre == producto.nombre
+    }
+
     if (index >= 0) {
+
         val itemActual = carrito[index]
+
         if (itemActual.cantidad <= 1) {
             carrito.removeAt(index)
         } else {
-            carrito[index] = itemActual.copy(cantidad = itemActual.cantidad - 1)
+
+            carrito[index] = itemActual.copy(
+                cantidad = itemActual.cantidad - 1
+            )
         }
-        CarritoStorage.guardar(context, carrito)
+
+        CarritoRepository.guardarCarrito(carrito)
     }
 }
 
@@ -2017,7 +2077,7 @@ fun CarritoScreen(
         OutlinedButton(
             onClick = {
                 carrito.clear()
-                CarritoStorage.guardar(context, carrito)
+                CarritoRepository.vaciarCarrito()
                 Toast.makeText(context, "Carrito vaciado", Toast.LENGTH_SHORT).show()
             },
             modifier = Modifier.fillMaxWidth(),
@@ -2730,49 +2790,6 @@ object TarjetasStorage {
                     alias = obj.optString("alias"),
                     titular = obj.optString("titular"),
                     numero = obj.optString("numero")
-                )
-            )
-        }
-
-        return lista
-    }
-}
-
-object CarritoStorage {
-    fun guardar(context: Context, lista: List<CartItem>) {
-        val prefs = context.getSharedPreferences("carrito", Context.MODE_PRIVATE)
-        val jsonArray = JSONArray()
-
-        lista.forEach { item ->
-            val obj = JSONObject()
-            obj.put("nombre", item.producto.nombre)
-            obj.put("precio", item.producto.precio)
-            obj.put("imagen", item.producto.imagen)
-            obj.put("cantidad", item.cantidad)
-            jsonArray.put(obj)
-        }
-
-        prefs.edit().putString("data", jsonArray.toString()).apply()
-    }
-
-    fun cargar(context: Context): MutableList<CartItem> {
-        val prefs = context.getSharedPreferences("carrito", Context.MODE_PRIVATE)
-        val data = prefs.getString("data", null) ?: return mutableListOf()
-
-        val lista = mutableListOf<CartItem>()
-        val jsonArray = JSONArray(data)
-
-        for (i in 0 until jsonArray.length()) {
-            val obj = jsonArray.getJSONObject(i)
-
-            lista.add(
-                CartItem(
-                    producto = Producto(
-                        nombre = obj.getString("nombre"),
-                        precio = obj.getString("precio"),
-                        imagen = obj.getInt("imagen")
-                    ),
-                    cantidad = if (obj.has("cantidad")) obj.getInt("cantidad") else 1
                 )
             )
         }

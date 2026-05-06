@@ -2,6 +2,7 @@ package mx.edu.proyecto.happybox.auth
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import mx.edu.proyecto.happybox.carrito
 import kotlin.collections.getValue
 import kotlin.text.get
 
@@ -37,6 +38,7 @@ object AuthRepository {
                         .addOnCompleteListener {
                             onResult(true, "Registro exitoso")
                         }
+                    carrito.clear()
 
                 } else {
                     onResult(false, task.exception?.message ?: "Error")
