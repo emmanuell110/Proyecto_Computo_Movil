@@ -95,4 +95,27 @@ object AuthRepository {
                 onResult(null)
             }
     }
+    fun actualizarUsuario(
+        nombre: String,
+        telefono: String,
+        onResult: (Boolean) -> Unit
+    ) {
+
+        val userId = auth.currentUser?.uid ?: return onResult(false)
+
+        val updates = mapOf(
+            "nombre" to nombre,
+            "telefono" to telefono
+        )
+
+        db.child("users")
+            .child(userId)
+            .updateChildren(updates)
+            .addOnSuccessListener {
+                onResult(true)
+            }
+            .addOnFailureListener {
+                onResult(false)
+            }
+    }
 }

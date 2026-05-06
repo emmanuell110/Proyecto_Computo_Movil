@@ -1366,59 +1366,124 @@ fun SoporteScreen() {
 
 @Composable
 fun EditarPerfilScreen() {
-    var nombre by remember { mutableStateOf("Juan Pérez") }
-    var telefono by remember { mutableStateOf("6441234567") }
-    var puedeCambiarNombre by remember { mutableStateOf(true) }
+
+    var nombre by remember { mutableStateOf("") }
+    var telefono by remember { mutableStateOf("") }
+
+    var cargando by remember { mutableStateOf(true) }
+    var guardando by remember { mutableStateOf(false) }
+
+    var mensaje by remember { mutableStateOf("") }
+
+    // 🔥 cargar datos reales
+    LaunchedEffect(Unit) {
+
+        mx.edu.proyecto.happybox.auth.AuthRepository.obtenerDatosUsuario {
+
+            if (it != null) {
+
+                nombre = it["nombre"] ?: ""
+                telefono = it["telefono"] ?: ""
+            }
+
+            cargando = false
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFFFFF7FA))
             .padding(16.dp)
     ) {
-        Text("Editar perfil", fontSize = 24.sp)
+
+        Text(
+            "Editar perfil",
+            fontSize = 24.sp,
+            fontWeight = FontWeight.Bold
+        )
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        OutlinedTextField(
-            value = nombre,
-            onValueChange = {
-                if (puedeCambiarNombre) nombre = it
-            },
-            label = { Text("Nombre") },
-            enabled = puedeCambiarNombre
-        )
+        if (cargando) {
 
-        if (!puedeCambiarNombre) {
-            Text(
-                "Solo puedes cambiar el nombre cada 30 días",
-                color = Color.Red,
-                fontSize = 12.sp
+            Text("Cargando datos...")
+
+        } else {
+
+            // 👤 NOMBRE
+            OutlinedTextField(
+                value = nombre,
+                onValueChange = { nombre = it },
+                label = { Text("Nombre") },
+                modifier = Modifier.fillMaxWidth()
             )
-        }
 
-        Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        OutlinedTextField(
-            value = telefono,
-            onValueChange = { telefono = it },
-            label = { Text("Teléfono") }
-        )
+            // 📱 TELÉFONO
+            OutlinedTextField(
+                value = telefono,
+                onValueChange = { telefono = it },
+                label = { Text("Teléfono") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
-        Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-        Button(onClick = { }) {
-            Text("Verificar número")
-        }
+            // 🔥 MENSAJE
+            if (mensaje.isNotBlank()) {
 
-        Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = mensaje,
+                    color = if (mensaje.contains("correctamente")) {
+                        Color(0xFF2E7D32)
+                    } else {
+                        Color.Red
+                    }
+                )
 
-        Button(
-            onClick = {
-                puedeCambiarNombre = false
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Guardar cambios")
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // 💾 GUARDAR
+            Button(
+                onClick = {
+
+                    if (nombre.isBlank() || telefono.isBlank()) {
+
+                        mensaje = "Completa todos los campos"
+                        return@Button
+                    }
+
+                    guardando = true
+
+                    mx.edu.proyecto.happybox.auth.AuthRepository.actualizarUsuario(
+                        nombre,
+                        telefono
+                    ) { success ->
+
+                        guardando = false
+
+                        mensaje = if (success) {
+                            "Perfil actualizado correctamente"
+                        } else {
+                            "Error al actualizar"
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !guardando
+            ) {
+
+                Text(
+                    if (guardando) {
+                        "Guardando..."
+                    } else {
+                        "Guardar cambios"
+                    }
+                )
+            }
         }
     }
 }
