@@ -16,6 +16,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,11 +52,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
@@ -64,16 +63,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -88,15 +84,15 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.FirebaseApp
 import kotlinx.coroutines.launch
 import mx.edu.proyecto.happybox.Domain.Producto
+import mx.edu.proyecto.happybox.auth.AuthManager
+import mx.edu.proyecto.happybox.auth.AuthRepository
 import mx.edu.proyecto.happybox.ui.theme.HappyboxTheme
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.random.Random
-import com.google.firebase.FirebaseApp
-import mx.edu.proyecto.happybox.auth.AuthRepository
-import mx.edu.proyecto.happybox.auth.AuthManager
 
 data class CartItem(
     val producto: Producto,
@@ -140,14 +136,15 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun AppNavigation() {
-
     val context = LocalContext.current
     val isLoggedIn = AuthRepository.getCurrentUser() != null
     var screen by rememberSaveable { mutableStateOf(if (isLoggedIn) "menu" else "inicio") }
+
+    var productoSeleccionado by remember { mutableStateOf<Producto?>(null) }
+    var pantallaAnteriorProducto by rememberSaveable { mutableStateOf("menu") }
 
     val direcciones = remember { mutableStateListOf<String>() }
     val tarjetas = remember { mutableStateListOf<TarjetaInfo>() }
@@ -229,32 +226,87 @@ fun AppNavigation() {
 
                     "detalles" -> {
                         BackHandler { screen = "menu" }
-                        DetallesScreen()
+                        DetallesScreen(
+                            onProductoClick = {
+                                productoSeleccionado = it
+                                pantallaAnteriorProducto = "detalles"
+                                screen = "detalle_producto"
+                            }
+                        )
                     }
 
                     "globos" -> {
                         BackHandler { screen = "menu" }
-                        GlobosScreen()
+                        GlobosScreen(
+                            onProductoClick = {
+                                productoSeleccionado = it
+                                pantallaAnteriorProducto = "globos"
+                                screen = "detalle_producto"
+                            }
+                        )
                     }
 
                     "peluches" -> {
                         BackHandler { screen = "menu" }
-                        PeluchesScreen()
+                        PeluchesScreen(
+                            onProductoClick = {
+                                productoSeleccionado = it
+                                pantallaAnteriorProducto = "peluches"
+                                screen = "detalle_producto"
+                            }
+                        )
                     }
 
                     "regalos" -> {
                         BackHandler { screen = "menu" }
-                        RegalosScreen()
+                        RegalosScreen(
+                            onProductoClick = {
+                                productoSeleccionado = it
+                                pantallaAnteriorProducto = "regalos"
+                                screen = "detalle_producto"
+                            }
+                        )
                     }
 
                     "tazas" -> {
                         BackHandler { screen = "menu" }
-                        TazasScreen()
+                        TazasScreen(
+                            onProductoClick = {
+                                productoSeleccionado = it
+                                pantallaAnteriorProducto = "tazas"
+                                screen = "detalle_producto"
+                            }
+                        )
                     }
 
                     "todo" -> {
                         BackHandler { screen = "menu" }
-                        MostrarTodoScreen()
+                        MostrarTodoScreen(
+                            onProductoClick = {
+                                productoSeleccionado = it
+                                pantallaAnteriorProducto = "todo"
+                                screen = "detalle_producto"
+                            }
+                        )
+                    }
+
+                    "detalle_producto" -> {
+                        BackHandler { screen = pantallaAnteriorProducto }
+                        productoSeleccionado?.let { producto ->
+                            DetalleProductoScreen(
+                                producto = producto,
+                                onBack = { screen = pantallaAnteriorProducto },
+                                onAgregar = { cantidad ->
+                                    agregarAlCarrito(producto, cantidad, context)
+                                    Toast.makeText(
+                                        context,
+                                        "Se agregaron $cantidad unidad(es) al carrito",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    screen = "carrito"
+                                }
+                            )
+                        }
                     }
 
                     "carrito" -> {
@@ -357,6 +409,7 @@ fun AppNavigation() {
                             onConfig = { screen = "config" }
                         )
                     }
+
                     "config" -> {
                         BackHandler { screen = "perfil" }
                         ConfigScreen(
@@ -369,6 +422,7 @@ fun AppNavigation() {
                             }
                         )
                     }
+
                     "soporte" -> {
                         BackHandler { screen = "config" }
                         SoporteScreen()
@@ -378,6 +432,7 @@ fun AppNavigation() {
                         BackHandler { screen = "config" }
                         AyudaScreen()
                     }
+
                     "editarPerfil" -> {
                         BackHandler { screen = "config" }
                         EditarPerfilScreen()
@@ -388,44 +443,70 @@ fun AppNavigation() {
     }
 }
 
-
 @Composable
 fun InicioScreen(onEntrar: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFF5F7))
-            .padding(horizontal = 24.dp, vertical = 24.dp),
+            .background(Color(0xFFFFF7FA))
+            .padding(horizontal = 28.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Image(
-            painter = androidx.compose.ui.res.painterResource(R.drawable.logo_happy_box),
-            contentDescription = "logo",
-            modifier = Modifier.size(180.dp)
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = "Envolturas, detalles y globos",
-            fontSize = 16.sp
-        )
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        Button(
-            onClick = onEntrar,
+        Card(
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Entrar")
+            Column(
+                modifier = Modifier.padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.logo_happy_box),
+                    contentDescription = "logo",
+                    modifier = Modifier.size(190.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Envolturas, detalles y globos",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF2F2F2F)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Sorprende con regalos especiales para cualquier ocasión",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+
+                Spacer(modifier = Modifier.height(22.dp))
+
+                Button(
+                    onClick = onEntrar,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF5B6EA6)
+                    )
+                ) {
+                    Text("Entrar", fontSize = 16.sp)
+                }
+            }
         }
     }
 }
 
 @Composable
 fun LoginScreen(onLogin: () -> Unit, onRegistro: () -> Unit) {
-
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var mostrarPassword by remember { mutableStateOf(false) }
@@ -434,75 +515,101 @@ fun LoginScreen(onLogin: () -> Unit, onRegistro: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFFFFF7FA))
             .padding(20.dp),
         verticalArrangement = Arrangement.Center
     ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    "Bienvenido",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2F2F2F)
+                )
 
-        Text("Bienvenido", fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(6.dp))
 
-        Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    "Inicia sesión para continuar",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
 
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Correo") },
-            modifier = Modifier.fillMaxWidth()
-        )
+                Spacer(modifier = Modifier.height(20.dp))
 
-        Spacer(modifier = Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Correo") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
+                )
 
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Contraseña") },
-            visualTransformation = if (mostrarPassword) androidx.compose.ui.text.input.VisualTransformation.None
-            else androidx.compose.ui.text.input.PasswordVisualTransformation(),
-            modifier = Modifier.fillMaxWidth()
-        )
+                Spacer(modifier = Modifier.height(12.dp))
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(
-                checked = mostrarPassword,
-                onCheckedChange = { mostrarPassword = it }
-            )
-            Text("Mostrar contraseña")
-        }
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Contraseña") },
+                    visualTransformation = if (mostrarPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
+                )
 
-        if (error.isNotBlank()) {
-            Text(error, color = Color.Red)
-        }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = mostrarPassword,
+                        onCheckedChange = { mostrarPassword = it }
+                    )
+                    Text("Mostrar contraseña")
+                }
 
-        Spacer(modifier = Modifier.height(16.dp))
+                if (error.isNotBlank()) {
+                    Text(error, color = Color.Red)
+                }
 
-        Button(
-            onClick = {
-                val errorMsg = AuthManager.validarLogin(email, password)
+                Spacer(modifier = Modifier.height(12.dp))
 
-                if (errorMsg != null) {
-                    error = errorMsg
-                } else {
-                    error = ""
-
-                    AuthRepository.login(email, password) { success, msg ->
-                        if (success) {
-                            onLogin()
+                Button(
+                    onClick = {
+                        val errorMsg = AuthManager.validarLogin(email, password)
+                        if (errorMsg != null) {
+                            error = errorMsg
                         } else {
-                            error = msg
+                            error = ""
+                            AuthRepository.login(email, password) { success, msg ->
+                                if (success) onLogin() else error = msg
+                            }
                         }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B6EA6))
+                ) {
+                    Text("Iniciar sesión")
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("¿No tienes cuenta? ")
+                    TextButton(onClick = onRegistro) {
+                        Text("Registrarse")
                     }
                 }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Iniciar sesión")
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row {
-            Text("¿No tienes cuenta? ")
-            TextButton(onClick = onRegistro) {
-                Text("Registrarse")
             }
         }
     }
@@ -510,7 +617,6 @@ fun LoginScreen(onLogin: () -> Unit, onRegistro: () -> Unit) {
 
 @Composable
 fun RegisterScreen(onBack: () -> Unit) {
-
     var nombre by rememberSaveable { mutableStateOf("") }
     var correo by rememberSaveable { mutableStateOf("") }
     var telefono by rememberSaveable { mutableStateOf("") }
@@ -523,76 +629,166 @@ fun RegisterScreen(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFFFFF7FA))
             .padding(20.dp),
         verticalArrangement = Arrangement.Center
     ) {
-
-        Text("Crear cuenta", fontSize = 26.sp, fontWeight = FontWeight.Bold)
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        OutlinedTextField(nombre, { nombre = it }, label = { Text("Nombre") })
-        OutlinedTextField(correo, { correo = it }, label = { Text("Correo") })
-        OutlinedTextField(telefono, { telefono = it }, label = { Text("Teléfono") })
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Contraseña") },
-            visualTransformation = if (mostrarPassword) VisualTransformation.None else PasswordVisualTransformation()
-        )
-
-        OutlinedTextField(
-            value = confirmPassword,
-            onValueChange = { confirmPassword = it },
-            label = { Text("Confirmar contraseña") },
-            visualTransformation = if (mostrarPassword) VisualTransformation.None else PasswordVisualTransformation()
-        )
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(
-                checked = mostrarPassword,
-                onCheckedChange = { mostrarPassword = it }
-            )
-            Text("Mostrar contraseña")
-        }
-
-        if (error.isNotBlank()) {
-            Text(error, color = Color.Red)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-
-                val errorMsg = AuthManager.validarRegistro(
-                    nombre, correo, telefono, password, confirmPassword
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(22.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Crear cuenta",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2F2F2F)
                 )
 
-                if (errorMsg != null) {
-                    error = errorMsg
-                } else {
-                    error = ""
+                Spacer(modifier = Modifier.height(6.dp))
 
-                    AuthRepository.register(
-                        nombre,
-                        correo,
-                        telefono,
-                        password
-                    ) { success, msg ->
+                Text(
+                    text = "Regístrate para descubrir regalos especiales",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
 
-                        if (success) {
-                            onBack()
-                        } else {
-                            error = msg
-                        }
-                    }
+                Spacer(modifier = Modifier.height(20.dp))
+
+                OutlinedTextField(
+                    value = nombre,
+                    onValueChange = { nombre = it },
+                    label = { Text("Nombre") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = correo,
+                    onValueChange = { correo = it },
+                    label = { Text("Correo") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = telefono,
+                    onValueChange = { telefono = it },
+                    label = { Text("Teléfono") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Contraseña") },
+                    visualTransformation = if (mostrarPassword) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = { confirmPassword = it },
+                    label = { Text("Confirmar contraseña") },
+                    visualTransformation = if (mostrarPassword) {
+                        VisualTransformation.None
+                    } else {
+                        PasswordVisualTransformation()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Checkbox(
+                        checked = mostrarPassword,
+                        onCheckedChange = { mostrarPassword = it }
+                    )
+                    Text("Mostrar contraseñas")
                 }
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Registrarse")
+
+                if (error.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = error,
+                        color = Color.Red,
+                        fontSize = 14.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                Button(
+                    onClick = {
+                        val errorMsg = AuthManager.validarRegistro(
+                            nombre, correo, telefono, password, confirmPassword
+                        )
+
+                        if (errorMsg != null) {
+                            error = errorMsg
+                        } else {
+                            error = ""
+
+                            AuthRepository.register(
+                                nombre,
+                                correo,
+                                telefono,
+                                password
+                            ) { success, msg ->
+                                if (success) {
+                                    onBack()
+                                } else {
+                                    error = msg
+                                }
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF5B6EA6)
+                    )
+                ) {
+                    Text("Registrarse")
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                TextButton(onClick = onBack) {
+                    Text("Ya tengo cuenta")
+                }
+            }
         }
     }
 }
@@ -633,7 +829,7 @@ fun MenuScreen(
                 }
 
                 Image(
-                    painter = androidx.compose.ui.res.painterResource(R.drawable.titulocategorias),
+                    painter = painterResource(R.drawable.titulocategorias),
                     contentDescription = "Categorias",
                     modifier = Modifier
                         .fillMaxWidth(0.72f)
@@ -648,45 +844,141 @@ fun MenuScreen(
                 color = Color.Gray
             )
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            BotonCategoria("Mostrar todo", onMostrarTodo)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Descubre regalos únicos",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = Color(0xFF2F2F2F)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Encuentra detalles especiales para cumpleaños, aniversarios y más",
+                        color = Color.Gray,
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            BotonCategoria(
+                texto = "Mostrar todo",
+                subtitulo = "Todos los productos disponibles",
+                onClick = onMostrarTodo
+            )
             Spacer(modifier = Modifier.height(12.dp))
 
-            BotonCategoria("Detalles", onDetalles)
+            BotonCategoria(
+                texto = "Detalles",
+                subtitulo = "Cajas, sorpresas y regalos",
+                onClick = onDetalles
+            )
             Spacer(modifier = Modifier.height(12.dp))
 
-            BotonCategoria("Globos", onGlobos)
+            BotonCategoria(
+                texto = "Globos",
+                subtitulo = "Decoración y celebraciones",
+                onClick = onGlobos
+            )
             Spacer(modifier = Modifier.height(12.dp))
 
-            BotonCategoria("Peluches", onPeluches)
+            BotonCategoria(
+                texto = "Peluches",
+                subtitulo = "Regalos tiernos y especiales",
+                onClick = onPeluches
+            )
             Spacer(modifier = Modifier.height(12.dp))
 
-            BotonCategoria("Regalos", onRegalos)
+            BotonCategoria(
+                texto = "Regalos",
+                subtitulo = "Opciones para cada ocasión",
+                onClick = onRegalos
+            )
             Spacer(modifier = Modifier.height(12.dp))
 
-            BotonCategoria("Tazas", onTazas)
+            BotonCategoria(
+                texto = "Tazas",
+                subtitulo = "Detalles personalizados",
+                onClick = onTazas
+            )
         }
     }
 }
-
 @Composable
-fun BotonCategoria(texto: String, onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
+fun BotonCategoria(
+    texto: String,
+    subtitulo: String,
+    onClick: () -> Unit
+) {
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(58.dp),
-        shape = RoundedCornerShape(20.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF5B6EA6)
-        )
+            .clickable { onClick() },
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        Text(
-            text = texto,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .background(Color(0xFFEAE4F7), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = when (texto) {
+                        "Detalles" -> "🎁"
+                        "Globos" -> "🎈"
+                        "Peluches" -> "🧸"
+                        "Regalos" -> "💝"
+                        "Tazas" -> "☕"
+                        "Mostrar todo" -> "✨"
+                        else -> "✨"
+                    },
+                    fontSize = 22.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.width(14.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = texto,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2F2F2F)
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitulo,
+                    fontSize = 13.sp,
+                    color = Color.Gray
+                )
+            }
+
+            Text(
+                text = "›",
+                fontSize = 26.sp,
+                color = Color(0xFF5B6EA6),
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 
@@ -700,18 +992,32 @@ fun BottomBar(
 
     NavigationBar(
         containerColor = Color.White,
-        tonalElevation = 8.dp,
+        tonalElevation = 10.dp,
         modifier = Modifier.windowInsetsPadding(
-            WindowInsets.navigationBars.only(androidx.compose.foundation.layout.WindowInsetsSides.Bottom)
+            WindowInsets.navigationBars.only(
+                androidx.compose.foundation.layout.WindowInsetsSides.Bottom
+            )
         )
     ) {
         NavigationBarItem(
             selected = currentScreen == "menu",
             onClick = onMenu,
             icon = {
-                Icon(Icons.Default.Menu, contentDescription = "Menú")
+                Icon(
+                    Icons.Default.Menu,
+                    contentDescription = "Menú",
+                    tint = if (currentScreen == "menu") Color(0xFF5B6EA6) else Color(0xFF9A9A9A),
+                    modifier = Modifier.size(24.dp)
+                )
             },
-            label = { Text("Menú") }
+            label = {
+                Text(
+                    text = "Menú",
+                    fontSize = 12.sp,
+                    fontWeight = if (currentScreen == "menu") FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (currentScreen == "menu") Color(0xFF5B6EA6) else Color(0xFF9A9A9A)
+                )
+            }
         )
 
         NavigationBarItem(
@@ -719,39 +1025,49 @@ fun BottomBar(
             onClick = onCarrito,
             icon = {
                 Box {
-                    Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
+                    Icon(
+                        Icons.Default.ShoppingCart,
+                        contentDescription = "Carrito",
+                        tint = if (currentScreen == "carrito") Color(0xFF5B6EA6) else Color(0xFF9A9A9A),
+                        modifier = Modifier.size(24.dp)
+                    )
+
                     if (totalItems > 0) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.TopEnd)
-                                .offset(x = 8.dp, y = (-6).dp)
-                                .background(Color.Red, CircleShape)
-                                .padding(horizontal = 5.dp, vertical = 1.dp)
+                                .offset(x = 9.dp, y = (-6).dp)
+                                .background(Color(0xFFE53935), CircleShape)
+                                .padding(horizontal = 6.dp, vertical = 1.dp)
                         ) {
                             Text(
                                 text = totalItems.toString(),
                                 color = Color.White,
-                                fontSize = 10.sp
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
                 }
             },
-            label = { Text("Carrito") }
+            label = {
+                Text(
+                    text = "Carrito",
+                    fontSize = 12.sp,
+                    fontWeight = if (currentScreen == "carrito") FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (currentScreen == "carrito") Color(0xFF5B6EA6) else Color(0xFF9A9A9A)
+                )
+            }
         )
     }
 }
 
-
 @Composable
 fun PerfilScreen(onConfig: () -> Unit) {
-
-    // 🔥 DATOS FIREBASE
     var nombre by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var cargando by remember { mutableStateOf(true) }
 
-    // 🔥 UBICACIONES (igual que ya tenías)
     var ubicaciones by remember {
         mutableStateOf(listOf("Casa - Calle 123"))
     }
@@ -765,9 +1081,8 @@ fun PerfilScreen(onConfig: () -> Unit) {
     var numero by remember { mutableStateOf("") }
     var entreCalles by remember { mutableStateOf("") }
 
-    // 🔥 CARGAR DATOS DEL USUARIO
     LaunchedEffect(Unit) {
-        mx.edu.proyecto.happybox.auth.AuthRepository.obtenerDatosUsuario {
+        AuthRepository.obtenerDatosUsuario {
             if (it != null) {
                 nombre = it["nombre"] ?: ""
                 telefono = it["telefono"] ?: ""
@@ -783,14 +1098,11 @@ fun PerfilScreen(onConfig: () -> Unit) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
-        // 🖼️ HEADER
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 10.dp)
         ) {
-
             Image(
                 painter = painterResource(R.drawable.tituloperfil),
                 contentDescription = "Perfil",
@@ -813,7 +1125,6 @@ fun PerfilScreen(onConfig: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 👤 TARJETA USUARIO (DINÁMICA)
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
@@ -824,7 +1135,6 @@ fun PerfilScreen(onConfig: () -> Unit) {
                 modifier = Modifier.padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
                 Icon(
                     Icons.Default.Person,
                     contentDescription = "Usuario",
@@ -856,7 +1166,6 @@ fun PerfilScreen(onConfig: () -> Unit) {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 📍 TÍTULO UBICACIONES
         Text(
             text = "Mis ubicaciones",
             fontSize = 18.sp,
@@ -865,7 +1174,6 @@ fun PerfilScreen(onConfig: () -> Unit) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 📦 LISTA
         LazyColumn(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -888,7 +1196,6 @@ fun PerfilScreen(onConfig: () -> Unit) {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // ➕ BOTÓN
         Button(
             onClick = { mostrarFormulario = true },
             modifier = Modifier.fillMaxWidth(),
@@ -901,7 +1208,6 @@ fun PerfilScreen(onConfig: () -> Unit) {
         }
     }
 
-    // 🔥 FORMULARIO
     if (mostrarFormulario) {
         AlertDialog(
             onDismissRequest = { mostrarFormulario = false },
@@ -941,6 +1247,7 @@ fun PerfilScreen(onConfig: () -> Unit) {
         )
     }
 }
+
 @Composable
 fun ConfigScreen(
     onSoporte: () -> Unit,
@@ -948,18 +1255,15 @@ fun ConfigScreen(
     onPerfilEdit: () -> Unit,
     onLogout: () -> Unit
 ) {
-
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-
         Text("Configuración", fontSize = 24.sp)
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 👤 EDITAR PERFIL
         Button(
             onClick = onPerfilEdit,
             modifier = Modifier.fillMaxWidth()
@@ -969,7 +1273,6 @@ fun ConfigScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 🛠 SOPORTE
         Button(
             onClick = onSoporte,
             modifier = Modifier.fillMaxWidth()
@@ -979,7 +1282,6 @@ fun ConfigScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // ❓ AYUDA
         Button(
             onClick = onAyuda,
             modifier = Modifier.fillMaxWidth()
@@ -989,7 +1291,6 @@ fun ConfigScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // 🔴 LOGOUT
         Button(
             onClick = onLogout,
             colors = ButtonDefaults.buttonColors(containerColor = Color.Red),
@@ -999,9 +1300,9 @@ fun ConfigScreen(
         }
     }
 }
+
 @Composable
 fun SoporteScreen() {
-
     var problema by remember { mutableStateOf("") }
 
     Column(
@@ -1009,7 +1310,6 @@ fun SoporteScreen() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-
         Text(
             text = "Reportar un problema",
             fontSize = 22.sp,
@@ -1030,19 +1330,18 @@ fun SoporteScreen() {
         Spacer(modifier = Modifier.height(20.dp))
 
         Button(
-            onClick = { /* enviar */ },
+            onClick = { },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Enviar reporte")
         }
     }
 }
+
 @Composable
 fun EditarPerfilScreen() {
-
     var nombre by remember { mutableStateOf("Juan Pérez") }
     var telefono by remember { mutableStateOf("6441234567") }
-
     var puedeCambiarNombre by remember { mutableStateOf(true) }
 
     Column(
@@ -1050,12 +1349,10 @@ fun EditarPerfilScreen() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-
         Text("Editar perfil", fontSize = 24.sp)
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 👤 NOMBRE
         OutlinedTextField(
             value = nombre,
             onValueChange = {
@@ -1075,7 +1372,6 @@ fun EditarPerfilScreen() {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // 📱 TELÉFONO
         OutlinedTextField(
             value = telefono,
             onValueChange = { telefono = it },
@@ -1084,9 +1380,7 @@ fun EditarPerfilScreen() {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        Button(onClick = {
-            // 🔥 aquí iría Firebase SMS
-        }) {
+        Button(onClick = { }) {
             Text("Verificar número")
         }
 
@@ -1094,7 +1388,7 @@ fun EditarPerfilScreen() {
 
         Button(
             onClick = {
-                puedeCambiarNombre = false // simula bloqueo 30 días
+                puedeCambiarNombre = false
             },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -1102,9 +1396,9 @@ fun EditarPerfilScreen() {
         }
     }
 }
+
 @Composable
 fun AyudaScreen() {
-
     val preguntas = listOf(
         "¿Qué métodos de pago hay?" to "Efectivo y tarjeta",
         "¿Hacen envíos?" to "Sí, a domicilio",
@@ -1117,7 +1411,6 @@ fun AyudaScreen() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-
         Text(
             text = "Ayuda",
             fontSize = 22.sp,
@@ -1128,14 +1421,12 @@ fun AyudaScreen() {
 
         LazyColumn {
             items(preguntas) { (pregunta, respuesta) ->
-
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 6.dp)
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
-
                         Text(
                             pregunta,
                             fontWeight = FontWeight.Bold
@@ -1151,7 +1442,6 @@ fun AyudaScreen() {
     }
 }
 
-
 fun todosLosProductos(): List<Producto> {
     return listOf(
         Producto("Caja sorpresa", "$250", R.drawable.regalo1),
@@ -1164,53 +1454,57 @@ fun todosLosProductos(): List<Producto> {
 }
 
 @Composable
-fun DetallesScreen() {
+fun DetallesScreen(onProductoClick: (Producto) -> Unit) {
     val productos = listOf(
         Producto("Caja sorpresa", "$250", R.drawable.regalo1),
         Producto("Detalle cumpleaños", "$300", R.drawable.regalo2)
     )
-    ListaProductos("Detalles", productos)
+    ListaProductos("Detalles", productos, onProductoClick)
 }
 
 @Composable
-fun GlobosScreen() {
+fun GlobosScreen(onProductoClick: (Producto) -> Unit) {
     val productos = listOf(
         Producto("Globo cumpleaños", "$150", R.drawable.globo1)
     )
-    ListaProductos("Globos", productos)
+    ListaProductos("Globos", productos, onProductoClick)
 }
 
 @Composable
-fun PeluchesScreen() {
+fun PeluchesScreen(onProductoClick: (Producto) -> Unit) {
     val productos = listOf(
         Producto("Oso de peluche", "$300", R.drawable.peluche1)
     )
-    ListaProductos("Peluches", productos)
+    ListaProductos("Peluches", productos, onProductoClick)
 }
 
 @Composable
-fun RegalosScreen() {
+fun RegalosScreen(onProductoClick: (Producto) -> Unit) {
     val productos = listOf(
         Producto("Caja premium con globos", "$450", R.drawable.regalo1)
     )
-    ListaProductos("Regalos", productos)
+    ListaProductos("Regalos", productos, onProductoClick)
 }
 
 @Composable
-fun TazasScreen() {
+fun TazasScreen(onProductoClick: (Producto) -> Unit) {
     val productos = listOf(
         Producto("Taza personalizada", "$180", R.drawable.taza1)
     )
-    ListaProductos("Tazas", productos)
+    ListaProductos("Tazas", productos, onProductoClick)
 }
 
 @Composable
-fun MostrarTodoScreen() {
-    ListaProductos("Mostrar todo", todosLosProductos())
+fun MostrarTodoScreen(onProductoClick: (Producto) -> Unit) {
+    ListaProductos("Mostrar todo", todosLosProductos(), onProductoClick)
 }
 
 @Composable
-fun ListaProductos(titulo: String, productos: List<Producto>) {
+fun ListaProductos(
+    titulo: String,
+    productos: List<Producto>,
+    onProductoClick: (Producto) -> Unit
+) {
     var busqueda by rememberSaveable { mutableStateOf("") }
 
     val filtrados = productos.filter {
@@ -1224,7 +1518,7 @@ fun ListaProductos(titulo: String, productos: List<Producto>) {
             .padding(16.dp)
     ) {
         Image(
-            painter = androidx.compose.ui.res.painterResource(
+            painter = painterResource(
                 when (titulo) {
                     "Globos" -> R.drawable.tituloglobos
                     "Peluches" -> R.drawable.titulopeluches
@@ -1282,7 +1576,10 @@ fun ListaProductos(titulo: String, productos: List<Producto>) {
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(filtrados) { producto ->
-                    ProductoItem(producto = producto)
+                    ProductoItem(
+                        producto = producto,
+                        onClick = { onProductoClick(producto) }
+                    )
                 }
             }
         }
@@ -1290,12 +1587,14 @@ fun ListaProductos(titulo: String, productos: List<Producto>) {
 }
 
 @Composable
-fun ProductoItem(producto: Producto) {
-    val context = LocalContext.current
-    var mostrarDialogo by remember { mutableStateOf(false) }
-
+fun ProductoItem(
+    producto: Producto,
+    onClick: () -> Unit
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F1FA)),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
@@ -1306,7 +1605,7 @@ fun ProductoItem(producto: Producto) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = androidx.compose.ui.res.painterResource(producto.imagen),
+                    painter = painterResource(producto.imagen),
                     contentDescription = producto.nombre,
                     modifier = Modifier
                         .size(82.dp)
@@ -1338,72 +1637,102 @@ fun ProductoItem(producto: Producto) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Button(
-                onClick = { mostrarDialogo = true },
+                onClick = onClick,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B6EA6))
             ) {
-                Text("Agregar al carrito")
+                Text("Ver detalle")
             }
         }
-    }
-
-    if (mostrarDialogo) {
-        DialogoAgregarProducto(
-            producto = producto,
-            onDismiss = { mostrarDialogo = false },
-            onAgregar = { cantidad ->
-                agregarAlCarrito(producto, cantidad, context)
-                mostrarDialogo = false
-                Toast.makeText(
-                    context,
-                    "Se agregaron $cantidad unidad(es) al carrito",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        )
     }
 }
 
 @Composable
-fun DialogoAgregarProducto(
+fun DetalleProductoScreen(
     producto: Producto,
-    onDismiss: () -> Unit,
+    onBack: () -> Unit,
     onAgregar: (Int) -> Unit
 ) {
-    var cantidad by remember { mutableIntStateOf(1) }
+    var cantidad by rememberSaveable { mutableIntStateOf(1) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            Button(onClick = { onAgregar(cantidad) }) {
-                Text("Agregar")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("Cancelar")
-            }
-        },
-        title = { Text(producto.nombre) },
-        text = {
-            Column {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFFFF7FA))
+            .padding(16.dp)
+    ) {
+        OutlinedButton(
+            onClick = onBack,
+            shape = RoundedCornerShape(14.dp)
+        ) {
+            Text("Volver")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(producto.imagen),
+                    contentDescription = producto.nombre,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(250.dp)
+                        .clip(RoundedCornerShape(20.dp)),
+                    contentScale = ContentScale.Crop
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
                 Text(
-                    text = "Selecciona cuántas unidades deseas agregar",
+                    text = producto.nombre,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2F2F2F)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = producto.precio,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF5B6EA6)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Un detalle especial ideal para sorprender en cumpleaños, celebraciones y momentos importantes.",
+                    fontSize = 15.sp,
                     color = Color.Gray
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = "Cantidad",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
                     FilledTonalButton(
-                        onClick = {
-                            if (cantidad > 0) cantidad--
-                        }
+                        onClick = { if (cantidad > 1) cantidad-- }
                     ) {
                         Text("-")
                     }
@@ -1425,16 +1754,23 @@ fun DialogoAgregarProducto(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(22.dp))
 
-                Text(
-                    text = "La cantidad no puede bajar de 0",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
+                Button(
+                    onClick = { onAgregar(cantidad) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF5B6EA6)
+                    )
+                ) {
+                    Text("Agregar al carrito")
+                }
             }
         }
-    )
+    }
 }
 
 fun agregarAlCarrito(producto: Producto, cantidad: Int, context: Context) {
@@ -1477,7 +1813,6 @@ fun disminuirCantidad(producto: Producto, context: Context) {
 fun precioNumerico(precio: String): Int {
     return precio.replace("$", "").trim().toIntOrNull() ?: 0
 }
-
 
 @Composable
 fun CarritoScreen(
@@ -1547,7 +1882,7 @@ fun CarritoScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Image(
-                                painter = androidx.compose.ui.res.painterResource(item.producto.imagen),
+                                painter = painterResource(item.producto.imagen),
                                 contentDescription = item.producto.nombre,
                                 modifier = Modifier
                                     .size(70.dp)
@@ -1692,8 +2027,6 @@ fun CarritoScreen(
         }
     }
 }
-
-
 
 @Composable
 fun PuntoEntregaScreen(
@@ -1847,7 +2180,13 @@ fun PuntoEntregaScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        if (calle.isNotBlank() && numero.isNotBlank() && ciudad.isNotBlank() && estado.isNotBlank() && cp.isNotBlank()) {
+                        if (
+                            calle.isNotBlank() &&
+                            numero.isNotBlank() &&
+                            ciudad.isNotBlank() &&
+                            estado.isNotBlank() &&
+                            cp.isNotBlank()
+                        ) {
                             val nueva = "$calle #$numero, $ciudad, $estado, CP $cp ($entreCalles)"
                             onAgregarDireccion(nueva)
                             onSeleccionar(nueva)
@@ -2327,7 +2666,6 @@ fun PagoTarjetaScreen(
 }
 
 object DireccionesStorage {
-
     fun guardar(context: Context, direcciones: List<String>) {
         val prefs = context.getSharedPreferences("direcciones", Context.MODE_PRIVATE)
         val jsonArray = JSONArray()
@@ -2359,7 +2697,6 @@ object DireccionesStorage {
 }
 
 object TarjetasStorage {
-
     fun guardar(context: Context, tarjetas: List<TarjetaInfo>) {
         val prefs = context.getSharedPreferences("tarjetas", Context.MODE_PRIVATE)
         val jsonArray = JSONArray()
@@ -2401,9 +2738,7 @@ object TarjetasStorage {
     }
 }
 
-
 object CarritoStorage {
-
     fun guardar(context: Context, lista: List<CartItem>) {
         val prefs = context.getSharedPreferences("carrito", Context.MODE_PRIVATE)
         val jsonArray = JSONArray()
