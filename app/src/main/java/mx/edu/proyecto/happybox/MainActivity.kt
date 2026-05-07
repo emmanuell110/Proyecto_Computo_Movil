@@ -880,7 +880,7 @@ fun MenuScreen(
 
                 Image(
                     painter = painterResource(R.drawable.titulocategorias),
-                    contentDescription = "Categorias",
+                    contentDescription = "Categorías",
                     modifier = Modifier
                         .fillMaxWidth(0.72f)
                         .align(Alignment.Center),
@@ -923,6 +923,7 @@ fun MenuScreen(
             BotonCategoria(
                 texto = "Mostrar todo",
                 subtitulo = "Todos los productos disponibles",
+                emoji = "✨",
                 onClick = onMostrarTodo
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -930,6 +931,7 @@ fun MenuScreen(
             BotonCategoria(
                 texto = "Detalles",
                 subtitulo = "Cajas, sorpresas y regalos",
+                emoji = "🎁",
                 onClick = onDetalles
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -937,6 +939,7 @@ fun MenuScreen(
             BotonCategoria(
                 texto = "Globos",
                 subtitulo = "Decoración y celebraciones",
+                emoji = "🎈",
                 onClick = onGlobos
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -944,6 +947,7 @@ fun MenuScreen(
             BotonCategoria(
                 texto = "Peluches",
                 subtitulo = "Regalos tiernos y especiales",
+                emoji = "🧸",
                 onClick = onPeluches
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -951,6 +955,7 @@ fun MenuScreen(
             BotonCategoria(
                 texto = "Regalos",
                 subtitulo = "Opciones para cada ocasión",
+                emoji = "💝",
                 onClick = onRegalos
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -958,6 +963,7 @@ fun MenuScreen(
             BotonCategoria(
                 texto = "Tazas",
                 subtitulo = "Detalles personalizados",
+                emoji = "☕",
                 onClick = onTazas
             )
         }
@@ -967,6 +973,7 @@ fun MenuScreen(
 fun BotonCategoria(
     texto: String,
     subtitulo: String,
+    emoji: String,
     onClick: () -> Unit
 ) {
     Card(
@@ -974,9 +981,7 @@ fun BotonCategoria(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Row(
@@ -992,15 +997,7 @@ fun BotonCategoria(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = when (texto) {
-                        "Detalles" -> "🎁"
-                        "Globos" -> "🎈"
-                        "Peluches" -> "🧸"
-                        "Regalos" -> "💝"
-                        "Tazas" -> "☕"
-                        "Mostrar todo" -> "✨"
-                        else -> "✨"
-                    },
+                    text = emoji,
                     fontSize = 22.sp
                 )
             }
@@ -1111,7 +1108,6 @@ fun BottomBar(
         )
     }
 }
-
 @Composable
 fun PerfilScreen(onConfig: () -> Unit) {
     var nombre by remember { mutableStateOf("") }
@@ -1635,11 +1631,20 @@ fun ListaProductos(
         it.nombre.contains(busqueda, ignoreCase = true)
     }
 
+    val subtitulo = when (titulo) {
+        "Globos" -> "Decoración y celebraciones para momentos especiales"
+        "Peluches" -> "Regalos tiernos y especiales para sorprender"
+        "Detalles" -> "Cajas, sorpresas y detalles para cualquier ocasión"
+        "Regalos" -> "Opciones únicas para cumpleaños y celebraciones"
+        "Tazas" -> "Detalles personalizados y originales"
+        else -> "Aquí puedes ver todos los productos disponibles"
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFFFF7FA))
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         Image(
             painter = painterResource(
@@ -1655,49 +1660,69 @@ fun ListaProductos(
             contentDescription = titulo,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(80.dp),
+                .height(78.dp),
             contentScale = ContentScale.Fit
         )
 
-        Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        Text(
-            text = if (titulo == "Mostrar todo") {
-                "Aquí puedes ver todos los productos disponibles"
-            } else {
-                "Encuentra un detalle especial para esa ocasión"
-            },
-            fontSize = 14.sp,
-            color = Color.Gray
-        )
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Explora esta sección",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF2F2F2F)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = subtitulo,
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+            }
+        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         OutlinedTextField(
             value = busqueda,
             onValueChange = { busqueda = it },
             label = { Text("Buscar producto") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(18.dp),
             singleLine = true
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         if (filtrados.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "No se encontraron productos",
-                    color = Color.Gray,
-                    fontSize = 16.sp
-                )
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Text(
+                        text = "No se encontraron productos",
+                        color = Color.Gray,
+                        fontSize = 16.sp,
+                        modifier = Modifier.padding(20.dp)
+                    )
+                }
             }
         } else {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                contentPadding = PaddingValues(bottom = 12.dp)
             ) {
                 items(filtrados) { producto ->
                     ProductoItem(
@@ -1709,7 +1734,6 @@ fun ListaProductos(
         }
     }
 }
-
 @Composable
 fun ProductoItem(
     producto: Producto,
@@ -1719,7 +1743,7 @@ fun ProductoItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF4F1FA)),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
@@ -1732,8 +1756,8 @@ fun ProductoItem(
                     painter = painterResource(producto.imagen),
                     contentDescription = producto.nombre,
                     modifier = Modifier
-                        .size(82.dp)
-                        .clip(RoundedCornerShape(14.dp)),
+                        .size(88.dp)
+                        .clip(RoundedCornerShape(16.dp)),
                     contentScale = ContentScale.Crop
                 )
 
@@ -1742,18 +1766,27 @@ fun ProductoItem(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = producto.nombre,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold,
                         color = Color(0xFF2F2F2F)
                     )
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
                         text = producto.precio,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.SemiBold,
                         color = Color(0xFF5B6EA6)
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Disponible",
+                        fontSize = 12.sp,
+                        color = Color(0xFF43A047),
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -1762,11 +1795,19 @@ fun ProductoItem(
 
             Button(
                 onClick = onClick,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF5B6EA6))
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(46.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF5B6EA6)
+                )
             ) {
-                Text("Ver detalle")
+                Text(
+                    text = "Ver detalle",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
