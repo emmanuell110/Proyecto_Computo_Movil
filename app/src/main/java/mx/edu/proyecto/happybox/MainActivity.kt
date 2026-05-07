@@ -1,6 +1,8 @@
 package mx.edu.proyecto.happybox
 
 import android.content.Context
+import mx.edu.proyecto.happybox.auth.DireccionesRepository
+
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -164,8 +166,11 @@ fun AppNavigation() {
         }
 
         // LOCAL
-        direcciones.clear()
-        direcciones.addAll(DireccionesStorage.cargar(context))
+        DireccionesRepository.obtenerDirecciones { lista ->
+
+            direcciones.clear()
+            direcciones.addAll(lista)
+        }
 
         tarjetas.clear()
         tarjetas.addAll(TarjetasStorage.cargar(context))
@@ -326,18 +331,37 @@ fun AppNavigation() {
 
                     "punto_entrega" -> {
                         BackHandler { screen = "carrito" }
+                        LaunchedEffect(Unit) {
+
+                            DireccionesRepository.obtenerDirecciones { lista ->
+
+                                direcciones.clear()
+                                direcciones.addAll(lista)
+                            }
+                        }
                         PuntoEntregaScreen(
                             direcciones = direcciones,
                             direccionSeleccionada = direccionSeleccionada,
                             onSeleccionar = { direccionSeleccionada = it },
                             onAgregarDireccion = {
+
                                 direcciones.add(it)
-                                DireccionesStorage.guardar(context, direcciones)
+
+                                DireccionesRepository.guardarDirecciones(
+                                    direcciones
+                                )
                             },
                             onEliminarDireccion = {
+
                                 direcciones.remove(it)
-                                if (direccionSeleccionada == it) direccionSeleccionada = ""
-                                DireccionesStorage.guardar(context, direcciones)
+
+                                if (direccionSeleccionada == it) {
+                                    direccionSeleccionada = ""
+                                }
+
+                                DireccionesRepository.guardarDirecciones(
+                                    direcciones
+                                )
                             },
                             onBack = { screen = "carrito" },
                             onContinuar = { screen = "metodo_pago" }
@@ -1095,9 +1119,8 @@ fun PerfilScreen(onConfig: () -> Unit) {
     var cargando by remember { mutableStateOf(true) }
 
     var ubicaciones by remember {
-        mutableStateOf(listOf("Casa - Calle 123"))
+        mutableStateOf<List<String>>(emptyList())
     }
-
     var mostrarFormulario by remember { mutableStateOf(false) }
 
     var cp by remember { mutableStateOf("") }
@@ -1108,12 +1131,17 @@ fun PerfilScreen(onConfig: () -> Unit) {
     var entreCalles by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
+
         AuthRepository.obtenerDatosUsuario {
             if (it != null) {
                 nombre = it["nombre"] ?: ""
                 telefono = it["telefono"] ?: ""
             }
             cargando = false
+        }
+        DireccionesRepository.obtenerDirecciones {
+
+            ubicaciones = it
         }
     }
 
@@ -1240,8 +1268,13 @@ fun PerfilScreen(onConfig: () -> Unit) {
             confirmButton = {
                 Button(onClick = {
                     val nueva = "$calle #$numero, $ciudad, $estado, CP $cp ($entreCalles)"
-                    ubicaciones = ubicaciones + nueva
+                    val nuevasDirecciones = ubicaciones + nueva
 
+                    ubicaciones = nuevasDirecciones
+
+                    DireccionesRepository.guardarDirecciones(
+                        nuevasDirecciones
+                    )
                     cp = ""
                     estado = ""
                     ciudad = ""
