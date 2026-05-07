@@ -1921,22 +1921,20 @@ fun DetalleProductoScreen(
 
                 Spacer(modifier = Modifier.height(22.dp))
 
-                Button(
-                    onClick = { onAgregar(cantidad) },
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF5B6EA6)
-                    ),
-                    contentPadding = PaddingValues(vertical = 12.dp)
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color(0xFF6B7CB8))
+                        .clickable { onAgregar(cantidad) },
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Agregar al carrito",
+                        color = Color.White,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
