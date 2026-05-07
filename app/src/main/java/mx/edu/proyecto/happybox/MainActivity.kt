@@ -1925,13 +1925,19 @@ fun DetalleProductoScreen(
                     onClick = { onAgregar(cantidad) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(54.dp),
+                        .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF5B6EA6)
-                    )
+                    ),
+                    contentPadding = PaddingValues(vertical = 12.dp)
                 ) {
-                    Text("Agregar al carrito")
+                    Text(
+                        text = "Agregar al carrito",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1
+                    )
                 }
             }
         }
